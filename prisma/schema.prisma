@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+}
+
+model Product {
+  id                 String   @id @default(cuid())
+  shopifyId          String   @unique
+  title              String
+  handle             String   @unique
+  description        String?
+  featuredImage      String?
+  optimizedImage     String?
+  imageAltTag        String?
+  originalImageSize  Int?
+  optimizedImageSize Int?
+  price              String
+  currencyCode       String   @default("USD")
+  status             String   @default("active")
+  vendor             String?
+  productType        String?
+  tags               String?
+  variantId          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  banners            Banner[]
+  bannerSlides       BannerSlide[]
+}
+
+model Banner {
+  id                          String            @id @default(cuid())
+  isActive                    Boolean           @default(false)
+  bannerWidth                 String            @default("full")
+  customWidth                 String?
+  bannerHeight                String            @default("auto")
+  customHeight                String?
+  bannerPadding               String            @default("12")
+  bannerLeftMargin            String            @default("0")
+  bannerRightMargin           String            @default("0")
+  bannerTopMargin             String            @default("0")
+  bannerBottomMargin          String            @default("0")
+  bannerBorderRadius          String            @default("8")
+  position                    String            @default("static")
+  priority                    Int               @default(0)
+  areMessagesCarousel         Boolean           @default(false)
+  messages                    String
+  messageFontSize             String            @default("16")
+  messagePosition             String            @default("left")
+messageColor                String            @default("#1a1a1a")
+  messagePadding              String            @default("8")
+  isTimer                     Boolean           @default(false)
+  startTime                   DateTime?
+  endTime                     DateTime?
+  timerBackgroundColor        String            @default("rgba(0,0,0,0.1)")
+  timerBorderColor            String            @default("rgba(0,0,0,0.15)")
+  timerPadding                String            @default("6")
+  timerTextColor              String            @default("#1a1a1a")
+  timerFontSize               String            @default("14")
+  hasProduct                  Boolean           @default(false)
+  productId                   String?
+  productTitle                String?
+  productImage                String?
+  productFontSize             String            @default("14")
+  actionType                  String            @default("view_product")
+  actionButtonText            String?
+  actionButtonTextColor       String            @default("#ffffff")
+  actionButtonBackgroundColor String            @default("#1a1a1a")
+  actionButtonBorderRadius    String            @default("6")
+  actionButtonPadding         String            @default("8")
+  responsiveDetails           String            @default("row")
+  responsiveFonts             String            @default("auto")
+  closeIconColor              String            @default("#1a1a1a")
+  closeIconPosition           String            @default("right")
+  closeIconSize               String            @default("16")
+  bgColor                     String            @default("#f7f7f7")
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @updatedAt
+  product                     Product?          @relation(fields: [productId], references: [id])
+  analytics                   BannerAnalytics[]
+  slides                      BannerSlide[]
+}
+
+model BannerSlide {
+  id                          String   @id @default(cuid())
+  bannerId                    String
+  order                       Int      @default(0)
+
+  // Per-slide content
+  message                     String
+
+  // Per-slide timer
+  isTimer                     Boolean  @default(false)
+  startTime                   DateTime?
+  endTime                     DateTime?
+
+  // Per-slide product linkage
+  hasProduct                  Boolean  @default(false)
+  productId                   String?
+  productTitle                String?
+  productImage                String?
+  actionType                  String   @default("view_product")
+  actionButtonText            String?
+
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  // Relations
+  banner                      Banner   @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+  product                     Product? @relation(fields: [productId], references: [id])
+
+  @@index([bannerId, order])
+}
+
+model BannerAnalytics {
+  id           String   @id @default(cuid())
+  bannerId     String
+  eventType    String
+  timestamp    DateTime @default(now())
+  sessionId    String?
+  shopDomain   String
+  productId    String?
+  messageIndex Int?
+  banner       Banner   @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+
+  @@index([bannerId, eventType])
+  @@index([timestamp])
+  @@index([shopDomain])
+}
+
