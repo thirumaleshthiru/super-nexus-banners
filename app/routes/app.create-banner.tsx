@@ -126,10 +126,6 @@ export async function action({ request }: ActionFunctionArgs) {
     const responsiveDetails = String(formData.get("responsiveDetails") || "row")
     const responsiveFonts = String(formData.get("responsiveFonts") || "auto")
 
-    // Close Icon
-    const closeIconColor = String(formData.get("closeIconColor") || "#ffffff")
-    const closeIconPosition = String(formData.get("closeIconPosition") || "right")
-    const closeIconSize = String(formData.get("closeIconSize") || "16")
 
     // Background
     const bgColor = String(formData.get("bgColor") || "#ff0000")
@@ -179,9 +175,6 @@ export async function action({ request }: ActionFunctionArgs) {
         actionButtonPadding,
         responsiveDetails,
         responsiveFonts,
-        closeIconColor,
-        closeIconPosition,
-        closeIconSize,
         bgColor,
       },
     })
@@ -267,10 +260,6 @@ export default function CreateBannerPage() {
   const [responsiveDetails, setResponsiveDetails] = useState("row")
   const [responsiveFonts, setResponsiveFonts] = useState("auto")
 
-  // Close Icon
-  const [closeIconColor, setCloseIconColor] = useState("#1a1a1a")
-  const [closeIconPosition, setCloseIconPosition] = useState("right")
-  const [closeIconSize, setCloseIconSize] = useState("16")
 
   // Background
   const [bgColor, setBgColor] = useState("#f7f7f7")
@@ -787,43 +776,6 @@ export default function CreateBannerPage() {
                     </BlockStack>
                   </Card>
 
-                  {/* Close Icon */}
-                  <Card>
-                    <BlockStack gap="300">
-                      <Text as="h3" variant="headingMd">
-                        Close Icon
-                      </Text>
-
-                      <TextField
-                        label="Icon Color"
-                        name="closeIconColor"
-                        value={closeIconColor}
-                        onChange={setCloseIconColor}
-                        autoComplete="off"
-                        prefix="#"
-                      />
-
-                      <Select
-                        label="Icon Position"
-                        name="closeIconPosition"
-                        options={[
-                          { label: "Left", value: "left" },
-                          { label: "Right", value: "right" },
-                        ]}
-                        value={closeIconPosition}
-                        onChange={setCloseIconPosition}
-                      />
-
-                      <TextField
-                        label="Icon Size (px)"
-                        type="number"
-                        name="closeIconSize"
-                        value={closeIconSize}
-                        onChange={setCloseIconSize}
-                        autoComplete="off"
-                      />
-                    </BlockStack>
-                  </Card>
 
                   {/* Background */}
                   <Card>

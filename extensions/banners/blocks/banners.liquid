@@ -1,27 +1,28 @@
 {% comment %}
   Professional Banner System v2.3
-  Uses ONLY admin-configured settings (no hardcoded defaults)
-  Supports: top-fixed, bottom-fixed, and static positioning
+  Fixed: Cart functionality, smooth horizontal sliding, removed navigation dots
 {% endcomment %}
 
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-  /* Reset body margin to prevent offset */
   body {
     margin: 0 !important;
     padding: 0 !important;
   }
   
-  /* Banner positioning styles */
   .banner-full-width-wrapper {
-    position: static;
-    width: 100%;
+    position: static !important;
+    left: 0 !important;
+    top: 0 !important;
     z-index: 99999;
+    order:1 !important;
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
   }
   
-  /* Fixed positioning - full viewport width */
   .banner-full-width-wrapper.position-top-fixed,
   .banner-full-width-wrapper.position-bottom-fixed {
     position: fixed !important;
@@ -42,48 +43,45 @@
     bottom: 0 !important;
   }
   
-  /* Static positioning - parent container width */
   .banner-full-width-wrapper.position-static {
     position: static;
     width: 100%;
     z-index: 99999;
   }
   
-  /* Inherit theme typography */
   [x-cloak] { display: none !important; }
   
   .banner-container * {
     font-family: inherit !important;
   }
   
-  /* Custom animations */
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* Smooth horizontal slide animation */
+  .banner-slides-wrapper {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
   }
   
-  .banner-slide-enter {
-    animation: slideIn 0.3s ease-out;
+  .banner-slides-container {
+    display: flex;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
   }
   
-  /* Smooth transitions */
+  .banner-slide {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+  
   .banner-transition {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  /* Timer styling */
   .timer-segment {
     min-width: 2.5rem;
     text-align: center;
   }
   
-  /* Product image styling */
   .product-image-wrapper {
     position: relative;
     overflow: hidden;
@@ -98,7 +96,6 @@
     transform: scale(1.05);
   }
   
-  /* Close button - always visible and positioned */
   .close-button {
     position: absolute;
     top: 8px;
@@ -113,20 +110,16 @@
     opacity: 0.8;
   }
   
-  /* Banner inner container with padding for close button */
   .banner-inner-container {
     position: relative;
-    padding-right: 48px;
   }
   
-  /* Ensure full width for fixed positioning */
   .banner-full-width-wrapper.position-top-fixed .banner-inner-container,
   .banner-full-width-wrapper.position-bottom-fixed .banner-inner-container {
     width: 100% !important;
     max-width: none !important;
   }
   
-  /* Responsive adjustments */
   @media (max-width: 768px) {
     .banner-content {
       flex-direction: column !important;
@@ -141,9 +134,6 @@
       justify-content: center !important;
     }
     
-    .banner-inner-container {
-      padding-right: 40px;
-    }
     
     .close-button {
       top: 4px;
@@ -162,7 +152,6 @@
   const ANALYTICS_API = '/apps/banners/analytics';
   const FETCH_TIMEOUT = 5000;
   
-  // Utility: Fetch with timeout
   async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -185,7 +174,6 @@
     }
   }
   
-  // Utility: Generate session ID
   function generateSessionId() {
     try {
       return btoa(navigator.userAgent + Date.now()).slice(0, 16);
@@ -194,12 +182,10 @@
     }
   }
   
-  // Utility: Get shop domain
   function getShopDomain() {
     return window.Shopify?.shop || window.location.host;
   }
   
-  // Analytics tracker
   async function trackEvent(bannerId, eventType, productId = null) {
     try {
       await fetchWithTimeout(ANALYTICS_API, {
@@ -217,7 +203,6 @@
     }
   }
   
-  // Timer calculator
   function calculateTimeRemaining(endTime) {
     const now = new Date();
     const end = new Date(endTime);
@@ -236,7 +221,6 @@
     };
   }
   
-  // Format timer display
   function formatTimer(time) {
     const parts = [];
     if (time.days > 0) parts.push(`${time.days}d`);
@@ -246,7 +230,6 @@
     return parts.join(' ');
   }
   
-  // Cart handler
   async function addToCart(variantId, quantity = 1) {
     let numericId = variantId;
     if (typeof variantId === 'string' && variantId.includes('gid://shopify/ProductVariant/')) {
@@ -265,11 +248,16 @@
       throw new Error('Failed to add to cart');
     }
     
-    // Trigger cart update events
     const data = await response.json();
+    
+    // Trigger Shopify cart update
+    if (window.Shopify && window.Shopify.onCartUpdate) {
+      window.Shopify.onCartUpdate(data);
+    }
+    
     document.dispatchEvent(new CustomEvent('cart:updated', { detail: data }));
     
-    // Update cart count if elements exist
+    // Update cart display
     try {
       const cartResponse = await fetch('/cart.js');
       const cartData = await cartResponse.json();
@@ -284,7 +272,6 @@
     return data;
   }
   
-  // Banner Alpine component
   function bannerComponent(bannerData) {
     return {
       banner: bannerData,
@@ -412,7 +399,6 @@
       getContainerStyle() {
         const styles = [];
         
-        // ONLY use admin settings - no fallbacks
         if (this.banner.bgColor) {
           styles.push(`background-color: ${this.banner.bgColor}`);
         }
@@ -429,7 +415,6 @@
           styles.push(`padding: ${this.banner.bannerPadding}px`);
         }
         
-        // Only apply margins for static positioning
         if (this.banner.position === 'static') {
           if (this.banner.bannerTopMargin !== null && this.banner.bannerTopMargin !== undefined) {
             styles.push(`margin-top: ${this.banner.bannerTopMargin}px`);
@@ -449,7 +434,6 @@
           styles.push(`height: ${this.banner.customHeight}px`);
         }
         
-        // Width only for static positioning
         if (this.banner.position === 'static' && this.banner.bannerWidth === 'custom' && this.banner.customWidth) {
           styles.push(`width: ${this.banner.customWidth}%`);
           styles.push(`margin-left: auto`);
@@ -457,21 +441,20 @@
         }
         
         return styles.join('; ');
+      },
+      
+      getSlideTransform() {
+        return `translateX(-${this.currentSlideIndex * 100}%)`;
       }
     };
   }
   
-  // Render banner HTML - USES ONLY ADMIN SETTINGS
   function renderBanner(banner) {
-    // Normalize position value (handle both formats)
     let position = banner.position || 'static';
-    position = position.replace(/-/g, '_'); // Convert dashes to underscores
-    position = position.replace(/_/g, '-'); // Convert back to dashes for CSS class
+    position = position.replace(/-/g, '_');
+    position = position.replace(/_/g, '-');
     
     const positionClass = `position-${position}`;
-    
-    console.log('Banner position from API:', banner.position);
-    console.log('Applied CSS class:', positionClass);
     
     return `
       <div class="banner-full-width-wrapper ${positionClass}">
@@ -479,152 +462,116 @@
           x-data="bannerComponent(${JSON.stringify(banner).replace(/"/g, '&quot;')})"
           x-show="!closed"
           x-cloak
-          class="banner-slide-enter banner-container"
+          class="banner-container"
         >
           <div 
             :style="getContainerStyle()"
             class="banner-transition banner-inner-container"
           >
-            <div class="banner-content flex items-center justify-evenly w-full">
-              
-              <!-- Message Section -->
-              <div class="flex-shrink-0 min-w-0">
-                <template x-if="banner.hasSlides && banner.slides.length > 0">
-                  <div>
-                    <template x-for="(slide, index) in banner.slides" :key="index">
-                      <div x-show="currentSlideIndex === index" class="banner-slide-enter">
-                        <p 
-                          class="text-base leading-relaxed m-0"
-                          :style="'font-size: ' + (slide.messageFontSize || banner.messageFontSize) + 'px; color: ' + (banner.messageColor)"
-                          x-text="slide.message"
-                        ></p>
-                      </div>
-                    </template>
-                  </div>
-                </template>
+            <div class="banner-slides-wrapper">
+              <div class="banner-slides-container" :style="'transform: ' + getSlideTransform()">
                 
-                <template x-if="!banner.hasSlides || banner.slides.length === 0">
-                  <div>
-                    <template x-if="banner.areMessagesCarousel && banner.messages && banner.messages.length > 1">
-                      <div>
-                        <template x-for="(message, index) in banner.messages" :key="index">
-                          <div x-show="currentSlideIndex === index" class="banner-slide-enter">
-                            <p 
-                              class="text-base leading-relaxed m-0"
-                              :style="'font-size: ' + (banner.messageFontSize) + 'px; color: ' + (banner.messageColor)"
-                              x-text="message"
-                            ></p>
+                <template x-if="banner.hasSlides && banner.slides.length > 0">
+                  <template x-for="(slide, index) in banner.slides" :key="index">
+                    <div class="banner-slide">
+                      <div class="banner-content flex items-center justify-evenly w-full">
+                        
+                        <div class="flex-shrink-0 min-w-0">
+                          <p 
+                            class="text-base leading-relaxed m-0"
+                            :style="'font-size: ' + (slide.messageFontSize || banner.messageFontSize) + 'px; color: ' + (banner.messageColor)"
+                            x-text="slide.message"
+                          ></p>
+                        </div>
+                        
+                        <template x-if="slide.isTimer && slide.endTime">
+                          <div 
+                            class="timer-display px-4 py-2 rounded-full backdrop-blur-sm flex-shrink-0"
+                            :style="'background: ' + (banner.timerBackgroundColor) + '; border: 1px solid ' + (banner.timerBorderColor) + '; color: ' + (banner.timerTextColor) + '; font-size: ' + (banner.timerFontSize) + 'px; padding: ' + (banner.timerPadding) + 'px'"
+                          >
+                            <span x-text="timers[index]?.formatted || 'Loading...'"></span>
+                          </div>
+                        </template>
+                        
+                        <template x-if="slide.hasProduct && (slide.productHandle || slide.productTitle)">
+                          <div class="flex items-center gap-3 flex-shrink-0">
+                            
+                            <template x-if="slide.productImage">
+                              <div class="product-image-wrapper w-10 h-10 rounded overflow-hidden border-2 border-white/30">
+                                <img 
+                                  :src="slide.productImage" 
+                                  :alt="slide.productTitle"
+                                  class="w-full h-full"
+                                />
+                              </div>
+                            </template>
+                            
+                            <div class="flex flex-col gap-1">
+                              <div 
+                                class="font-medium text-sm whitespace-nowrap"
+                                :style="'font-size: ' + (banner.productFontSize) + 'px; color: ' + (banner.messageColor)"
+                                x-text="slide.productTitle"
+                              ></div>
+                              <template x-if="slide.productPrice">
+                                <div 
+                                  class="text-xs opacity-90"
+                                  :style="'font-size: ' + (banner.productFontSize) + 'px; color: ' + (banner.messageColor)"
+                                  x-text="(slide.productCurrencyCode) + ' ' + (slide.productPrice)"
+                                ></div>
+                              </template>
+                            </div>
+                            
+                            <template x-if="slide.actionType === 'add_to_cart' && slide.productVariantId">
+                              <button
+                                @click="handleAddToCart(slide)"
+                                :disabled="loading"
+                                class="px-4 py-2 rounded font-medium whitespace-nowrap banner-transition"
+                                :style="'background: ' + (slide.actionButtonBackgroundColor || banner.actionButtonBackgroundColor) + '; color: ' + (slide.actionButtonTextColor || banner.actionButtonTextColor) + '; border-radius: ' + (slide.actionButtonBorderRadius || banner.actionButtonBorderRadius) + 'px; padding: ' + (banner.actionButtonPadding) + 'px; font-size: ' + (banner.productFontSize) + 'px'"
+                              >
+                                <span x-show="!loading" x-text="slide.actionButtonText"></span>
+                                <span x-show="loading">Adding...</span>
+                              </button>
+                            </template>
+                            
+                            <template x-if="slide.actionType === 'view_product' || !slide.actionType">
+                              <button
+                                @click="handleViewProduct(slide)"
+                                class="px-4 py-2 rounded font-medium whitespace-nowrap banner-transition"
+                                :style="'background: ' + (slide.actionButtonBackgroundColor || banner.actionButtonBackgroundColor) + '; color: ' + (slide.actionButtonTextColor || banner.actionButtonTextColor) + '; border-radius: ' + (slide.actionButtonBorderRadius || banner.actionButtonBorderRadius) + 'px; padding: ' + (banner.actionButtonPadding) + 'px; font-size: ' + (banner.productFontSize) + 'px'"
+                              >
+                                <span x-text="slide.actionButtonText"></span>
+                              </button>
+                            </template>
                           </div>
                         </template>
                       </div>
-                    </template>
-                    
-                    <template x-if="!banner.areMessagesCarousel || !banner.messages || banner.messages.length <= 1">
-                      <p 
-                        class="text-base leading-relaxed m-0"
-                        :style="'font-size: ' + (banner.messageFontSize) + 'px; color: ' + (banner.messageColor)"
-                        x-text="banner.messages && banner.messages[0] ? banner.messages[0] : ''"
-                      ></p>
-                    </template>
-                  </div>
-                </template>
-              </div>
-              
-              <!-- Timer Display -->
-              <template x-if="getCurrentSlide().isTimer && getCurrentSlide().endTime">
-                <div 
-                  class="timer-display px-4 py-2 rounded-full backdrop-blur-sm flex-shrink-0"
-                  :style="'background: ' + (banner.timerBackgroundColor) + '; border: 1px solid ' + (banner.timerBorderColor) + '; color: ' + (banner.timerTextColor) + '; font-size: ' + (banner.timerFontSize) + 'px; padding: ' + (banner.timerPadding) + 'px'"
-                >
-                  <span x-text="timers[currentSlideIndex]?.formatted || timers.main?.formatted || 'Loading...'"></span>
-                </div>
-              </template>
-              
-              <!-- Product Section -->
-              <template x-if="getCurrentSlide().hasProduct && (getCurrentSlide().productHandle || getCurrentSlide().productTitle)">
-                <div class="flex items-center gap-3 flex-shrink-0">
-                  
-                  <template x-if="getCurrentSlide().productImage || banner.productImage">
-                    <div class="product-image-wrapper w-10 h-10 rounded overflow-hidden border-2 border-white/30">
-                      <img 
-                        :src="getCurrentSlide().productImage || banner.productImage" 
-                        :alt="getCurrentSlide().productTitle || banner.productTitle"
-                        class="w-full h-full"
-                      />
                     </div>
                   </template>
-                  
-                  <div class="flex flex-col gap-1">
-                    <div 
-                      class="font-medium text-sm whitespace-nowrap"
-                      :style="'font-size: ' + (banner.productFontSize) + 'px; color: ' + (banner.messageColor)"
-                      x-text="getCurrentSlide().productTitle || banner.productTitle"
-                    ></div>
-                    <template x-if="getCurrentSlide().productPrice || banner.productPrice">
-                      <div 
-                        class="text-xs opacity-90"
-                        :style="'font-size: ' + (banner.productFontSize) + 'px; color: ' + (banner.messageColor)"
-                        x-text="(getCurrentSlide().productCurrencyCode || banner.productCurrencyCode) + ' ' + (getCurrentSlide().productPrice || banner.productPrice)"
-                      ></div>
-                    </template>
+                </template>
+                
+                <template x-if="!banner.hasSlides || banner.slides.length === 0">
+                  <div class="banner-slide">
+                    <div class="banner-content flex items-center justify-evenly w-full">
+                      <div class="flex-shrink-0 min-w-0">
+                        <p 
+                          class="text-base leading-relaxed m-0"
+                          :style="'font-size: ' + (banner.messageFontSize) + 'px; color: ' + (banner.messageColor)"
+                          x-text="banner.messages && banner.messages[0] ? banner.messages[0] : ''"
+                        ></p>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <template x-if="getCurrentSlide().actionType === 'add_to_cart' && getCurrentSlide().productVariantId">
-                    <button
-                      @click="handleAddToCart(getCurrentSlide())"
-                      :disabled="loading"
-                      class="px-4 py-2 rounded font-medium text-sm whitespace-nowrap banner-transition"
-                      :style="'background: ' + (getCurrentSlide().actionButtonBackgroundColor || banner.actionButtonBackgroundColor) + '; color: ' + (getCurrentSlide().actionButtonTextColor || banner.actionButtonTextColor) + '; border-radius: ' + (getCurrentSlide().actionButtonBorderRadius || banner.actionButtonBorderRadius) + 'px; padding: ' + (banner.actionButtonPadding) + 'px'"
-                    >
-                      <span x-show="!loading" x-text="getCurrentSlide().actionButtonText || banner.actionButtonText"></span>
-                      <span x-show="loading">Adding...</span>
-                    </button>
-                  </template>
-                  
-                  <template x-if="getCurrentSlide().actionType === 'view_product' || !getCurrentSlide().actionType || getCurrentSlide().actionType === ''">
-                    <button
-                      @click="handleViewProduct(getCurrentSlide())"
-                      class="px-4 py-2 rounded font-medium text-sm whitespace-nowrap banner-transition"
-                      :style="'background: ' + (getCurrentSlide().actionButtonBackgroundColor || banner.actionButtonBackgroundColor) + '; color: ' + (getCurrentSlide().actionButtonTextColor || banner.actionButtonTextColor) + '; border-radius: ' + (getCurrentSlide().actionButtonBorderRadius || banner.actionButtonBorderRadius) + 'px; padding: ' + (banner.actionButtonPadding) + 'px'"
-                    >
-                      <span x-text="getCurrentSlide().actionButtonText || banner.actionButtonText"></span>
-                    </button>
-                  </template>
-                </div>
-              </template>
-              
-              <!-- Close Button -->
-              <button
-                @click="handleClose()"
-                class="close-button w-8 h-8 flex items-center justify-center rounded backdrop-blur-sm"
-                :style="'background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: ' + (banner.closeIconColor) + '; font-size: ' + (banner.closeIconSize) + 'px; font-weight: bold;'"
-                aria-label="Close banner"
-              >
-                ×
-              </button>
+                </template>
+                
+              </div>
             </div>
             
-            <!-- Slide Indicators -->
-            <template x-if="banner.hasSlides && banner.slides.length > 1">
-              <div class="flex justify-center gap-2 mt-3">
-                <template x-for="(slide, index) in banner.slides" :key="index">
-                  <button
-                    @click="currentSlideIndex = index"
-                    class="w-2 h-2 rounded-full banner-transition"
-                    :class="currentSlideIndex === index ? 'opacity-100' : 'opacity-40'"
-                    :style="'background: ' + (banner.messageColor)"
-                    :aria-label="'Go to slide ' + (index + 1)"
-                  ></button>
-                </template>
-              </div>
-            </template>
           </div>
         </div>
       </div>
     `;
   }
   
-  // Main initialization
   async function init() {
     const rootElement = document.getElementById('banner-root');
     if (!rootElement) return;
@@ -643,9 +590,8 @@
         const defaultMessage = "{{ block.settings.default_message | default: 'Welcome to our store!' }}";
         rootElement.innerHTML = `
           <div class="banner-full-width-wrapper position-static">
-            <div style="background: #f7f7f7; color: #1a1a1a; padding: 20px; position: relative; padding-right: 48px; border-radius: 8px;">
+            <div style="background: #f7f7f7; color: #1a1a1a; padding: 20px; position: relative; border-radius: 8px;">
               <p class="m-0" style="font-size: 16px;">${defaultMessage}</p>
-              <button onclick="this.parentElement.parentElement.remove()" class="close-button w-8 h-8 flex items-center justify-center rounded" style="background: rgba(255,255,255,0.2); position: absolute; top: 8px; right: 8px; color: #1a1a1a; font-size: 16px;">×</button>
             </div>
           </div>
         `;
@@ -656,6 +602,13 @@
       
       const bannersHTML = banners.map(renderBanner).join('');
       rootElement.innerHTML = bannersHTML;
+
+      const header = document.querySelector('header, .shopify-section-header');
+      if (header && header.parentNode) {
+        header.parentNode.insertBefore(rootElement, header);
+      } else {
+        document.body.prepend(rootElement);
+      }
       
     } catch (error) {
       console.error('Banner initialization error:', error);
@@ -663,9 +616,8 @@
       const defaultMessage = "{{ block.settings.default_message | default: 'Welcome to our store!' }}";
       rootElement.innerHTML = `
         <div class="banner-full-width-wrapper position-static">
-          <div style="background: #f7f7f7; color: #1a1a1a; padding: 20px; position: relative; padding-right: 48px; border-radius: 8px;">
+          <div style="background: #f7f7f7; color: #1a1a1a; padding: 20px; position: relative; border-radius: 8px;">
             <p class="m-0" style="font-size: 16px;">${defaultMessage}</p>
-            <button onclick="this.parentElement.parentElement.remove()" class="close-button w-8 h-8 flex items-center justify-center rounded" style="background: rgba(255,255,255,0.2); position: absolute; top: 8px; right: 8px; color: #1a1a1a; font-size: 16px;">×</button>
           </div>
         </div>
       `;
