@@ -15,10 +15,11 @@ import { TitleBar } from "@shopify/app-bridge-react"
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node"
 import { json, redirect } from "@remix-run/node"
 import { Form, useLoaderData, useNavigation } from "@remix-run/react"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import prisma from "app/db.server"
 import { Link } from "@remix-run/react"
 import { authenticate } from "../shopify.server"
+
 // ---- Types ----
 interface Product {
   id: string
@@ -29,6 +30,12 @@ interface Product {
   price: string
   currencyCode: string
   variantId: string | null
+  variants?: Array<{
+    id: string
+    title: string
+    price: string
+    sku: string | null
+  }>
 }
 
 interface Slide {
@@ -39,6 +46,7 @@ interface Slide {
   hasProduct: boolean
   productId: string
   productTitle: string
+  productVariantId: string
   actionType: string
   actionButtonText: string
 }
@@ -55,7 +63,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
       orderBy: { title: "asc" },
     })
 
-    return json({ products })
+    // Parse variants for each product
+    const productsWithVariants = products.map((product: any) => ({
+      ...product,
+      variants: product.variants ? JSON.parse(product.variants) : []
+    }))
+
+    return json({ products: productsWithVariants })
   } catch (error) {
     console.error("Loader error:", error)
     return json({ products: [] })
@@ -76,6 +90,14 @@ export async function action({ request }: ActionFunctionArgs) {
     // Parse slides from form data
     const slidesJson = String(formData.get("slides") || "[]")
     const slides = JSON.parse(slidesJson) as Slide[]
+    
+     // Validate slides with products have variants selected
+     for (let i = 0; i < slides.length; i++) {
+       const slide = slides[i]
+       if (slide.hasProduct && slide.productId && !slide.productVariantId) {
+         // Slide has product but no variant selected - this will be handled by frontend validation
+       }
+     }
 
     // Banner Layout & Positioning
     const bannerWidth = String(formData.get("bannerWidth") || "full")
@@ -125,7 +147,6 @@ export async function action({ request }: ActionFunctionArgs) {
     // Responsive Design
     const responsiveDetails = String(formData.get("responsiveDetails") || "row")
     const responsiveFonts = String(formData.get("responsiveFonts") || "auto")
-
 
     // Background
     const bgColor = String(formData.get("bgColor") || "#ff0000")
@@ -182,20 +203,39 @@ export async function action({ request }: ActionFunctionArgs) {
     // Create slides
     for (let i = 0; i < slides.length; i++) {
       const slide = slides[i]
+      
+      // Use the productId directly since it's already the internal database ID
+      let internalProductId = null;
+      let numericVariantId = null;
+      
+      if (slide.hasProduct && slide.productId) {
+        // ProductId is already the internal database ID
+        internalProductId = slide.productId;
+        
+        // Variant ID should already be numeric from frontend
+        if (slide.productVariantId) {
+          numericVariantId = slide.productVariantId;
+        }
+      }
+      
+      const slideData = {
+        bannerId: banner.id,
+        order: i,
+        message: slide.message,
+        isTimer: slide.isTimer,
+        startTime: slide.isTimer && slide.startTime ? new Date(slide.startTime) : null,
+        endTime: slide.isTimer && slide.endTime ? new Date(slide.endTime) : null,
+        hasProduct: slide.hasProduct,
+        productId: internalProductId,
+        productTitle: slide.hasProduct ? slide.productTitle : null,
+        productVariantId: numericVariantId,
+        actionType: slide.hasProduct ? slide.actionType : "view_product",
+        actionButtonText: slide.hasProduct ? slide.actionButtonText : null,
+      }
+      
+      
       await (prisma as any).bannerSlide.create({
-        data: {
-          bannerId: banner.id,
-          order: i,
-          message: slide.message,
-          isTimer: slide.isTimer,
-          startTime: slide.isTimer && slide.startTime ? new Date(slide.startTime) : null,
-          endTime: slide.isTimer && slide.endTime ? new Date(slide.endTime) : null,
-          hasProduct: slide.hasProduct,
-          productId: slide.hasProduct && slide.productId ? slide.productId : null,
-          productTitle: slide.hasProduct ? slide.productTitle : null,
-          actionType: slide.hasProduct ? slide.actionType : "view_product",
-          actionButtonText: slide.hasProduct ? slide.actionButtonText : null,
-        },
+        data: slideData,
       })
     }
 
@@ -236,9 +276,18 @@ export default function CreateBannerPage() {
     hasProduct: false,
     productId: "",
     productTitle: "",
+    productVariantId: "",
     actionType: "view_product",
     actionButtonText: "View Product"
   }])
+
+  // Use ref to keep track of latest slides state
+  const slidesRef = useRef(slides);
+
+  // Update ref whenever slides change
+  useEffect(() => {
+    slidesRef.current = slides;
+  }, [slides]);
 
   // Styling (global) - Using schema defaults
   const [messageFontSize, setMessageFontSize] = useState("16")
@@ -260,7 +309,6 @@ export default function CreateBannerPage() {
   const [responsiveDetails, setResponsiveDetails] = useState("row")
   const [responsiveFonts, setResponsiveFonts] = useState("auto")
 
-
   // Background
   const [bgColor, setBgColor] = useState("#f7f7f7")
 
@@ -274,6 +322,7 @@ export default function CreateBannerPage() {
       hasProduct: false,
       productId: "",
       productTitle: "",
+      productVariantId: "",
       actionType: "view_product",
       actionButtonText: "View Product"
     }])
@@ -291,6 +340,25 @@ export default function CreateBannerPage() {
     setSlides(newSlides)
   }
 
+  // Handle form submission with validation
+  const handleSubmit = (e: React.FormEvent) => {
+    // Validate that all slides with products have variants selected
+    const invalidSlides = slidesRef.current.filter(
+      (slide, idx) => slide.hasProduct && slide.productId && !slide.productVariantId
+    );
+    
+    if (invalidSlides.length > 0) {
+      e.preventDefault();
+      const slideNumbers = slidesRef.current
+        .map((slide, idx) => slide.hasProduct && slide.productId && !slide.productVariantId ? idx + 1 : null)
+        .filter(n => n !== null)
+        .join(', ');
+      
+      alert(`Please select a variant for slide(s): ${slideNumbers}`);
+      return false;
+    }
+  }
+
   return (
     <Page>
       <TitleBar title="Create New Banner" />
@@ -303,14 +371,20 @@ export default function CreateBannerPage() {
                   Banner Configuration
                 </Text>
                
-                    <Link to="/app/sync-products">Sync Products</Link>
-                
+                <Link to="/app/sync-products">Sync Products</Link>
               </InlineStack>
 
-              <Form method="post">
+              <Form method="post" onSubmit={handleSubmit}>
                 <input type="hidden" name="_intent" value="create" />
                 <input type="hidden" name="isActive" value={isActive.toString()} />
-                <input type="hidden" name="slides" value={JSON.stringify(slides)} />
+                
+                {/* Use a controlled input that updates from state with key to force re-render */}
+                <input 
+                  type="hidden" 
+                  name="slides" 
+                  value={JSON.stringify(slides)} 
+                  key={JSON.stringify(slides)}
+                />
 
                 <BlockStack gap="400">
                   {/* Basic Settings */}
@@ -418,25 +492,93 @@ export default function CreateBannerPage() {
 
                             {slide.hasProduct && (
                               <BlockStack gap="200">
-                                <Select
-                                  label="Select Product"
-                                  options={[
-                                    { label: "Choose a product", value: "" },
-                                    ...products.map((product: Product) => ({
-                                      label: `${product.title} - $${product.price}`,
-                                      value: product.id,
-                                    })),
-                                  ]}
-                                  value={slide.productId}
-                                  onChange={(value) => {
-                                    updateSlide(index, "productId", value)
-                                    const selectedProduct = products.find((p: Product) => p.id === value)
-                                    if (selectedProduct) {
-                                      updateSlide(index, "productTitle", selectedProduct.title)
-                                    }
-                                  }}
-                                  helpText={products.length === 0 ? "No products available. Click 'Sync Products' above." : ""}
-                                />
+                                 <div>
+                                   <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>Select Product</label>
+                                   <select 
+                                     value={slide.productId || ""}
+                                     onChange={(e) => {
+                                       const value = e.target.value;
+                                       
+                                       const selectedProduct = products.find((p: Product) => p.id === value)
+                                       
+                                       // Update all fields in one go to avoid state batching issues
+                                       const newSlides = [...slides];
+                                       newSlides[index] = {
+                                         ...newSlides[index],
+                                         productId: value,
+                                         productVariantId: "", // Reset variant when product changes
+                                         productTitle: selectedProduct ? selectedProduct.title : ""
+                                       };
+                                       setSlides(newSlides);
+                                     }}
+                                     style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}}
+                                   >
+                                     <option value="">Choose a product</option>
+                                     {products.map((product: Product) => (
+                                       <option key={product.id} value={product.id}>
+                                         {product.title} - ${product.price}
+                                       </option>
+                                     ))}
+                                   </select>
+                                   {products.length === 0 && (
+                                     <p style={{color: '#666', fontSize: '14px', marginTop: '4px'}}>
+                                       No products available. Click 'Sync Products' above.
+                                     </p>
+                                   )}
+                                 </div>
+
+                                 {slide.productId && (() => {
+                                   const selectedProduct = products.find((p: Product) => p.id === slide.productId)
+                                   const variants = selectedProduct?.variants || []
+                                   
+                                   if (variants.length > 0) {
+                                     return (
+                                       <div>
+                                         <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>
+                                           Select Variant <span style={{color: 'red'}}>*</span>
+                                         </label>
+                                         <select 
+                                           value={slide.productVariantId || ""}
+                                           onChange={(e) => {
+                                             const value = e.target.value;
+                                             
+                                             // Update variant in one go
+                                             const newSlides = [...slides];
+                                             newSlides[index] = {
+                                               ...newSlides[index],
+                                               productVariantId: value
+                                             };
+                                             setSlides(newSlides);
+                                           }}
+                                           style={{
+                                             width: '100%', 
+                                             padding: '8px', 
+                                             border: `1px solid ${!slide.productVariantId ? '#ff0000' : '#ccc'}`, 
+                                             borderRadius: '4px'
+                                           }}
+                                         >
+                                           <option value="">Choose a variant</option>
+                                           {variants.map((variant: { id: string; title: string; price: string; sku: string | null }) => (
+                                             <option key={variant.id} value={variant.id}>
+                                               {variant.title}
+                                             </option>
+                                           ))}
+                                         </select>
+                                         <p style={{
+                                           color: !slide.productVariantId ? '#ff0000' : '#666', 
+                                           fontSize: '14px', 
+                                           marginTop: '4px'
+                                         }}>
+                                           {!slide.productVariantId 
+                                             ? 'Please select a variant (required for add to cart)'
+                                             : 'Variant selected for add to cart functionality'
+                                           }
+                                         </p>
+                                       </div>
+                                     )
+                                   }
+                                   return null
+                                 })()}
 
                                 <TextField
                                   label="Product Title Override"
@@ -454,8 +596,14 @@ export default function CreateBannerPage() {
                                   ]}
                                   value={slide.actionType}
                                   onChange={(value) => {
-                                    updateSlide(index, "actionType", value)
-                                    updateSlide(index, "actionButtonText", value === "view_product" ? "View Product" : "Add to Cart")
+                                    // Update both actionType and actionButtonText in one go
+                                    const newSlides = [...slides];
+                                    newSlides[index] = {
+                                      ...newSlides[index],
+                                      actionType: value,
+                                      actionButtonText: value === "view_product" ? "View Product" : "Add to Cart"
+                                    };
+                                    setSlides(newSlides);
                                   }}
                                 />
 
@@ -775,7 +923,6 @@ export default function CreateBannerPage() {
                       />
                     </BlockStack>
                   </Card>
-
 
                   {/* Background */}
                   <Card>

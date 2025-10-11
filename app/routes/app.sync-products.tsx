@@ -40,17 +40,19 @@ export async function action({ request }: ActionFunctionArgs) {
               vendor
               productType
               tags
-                             featuredImage {
-                 src
-               }
-                             variants(first: 1) {
-                 edges {
-                   node {
-                     id
-                     price
-                   }
-                 }
-               }
+              featuredImage {
+                src
+              }
+              variants(first: 50) {
+                edges {
+                  node {
+                    id
+                    title
+                    price
+                    sku
+                  }
+                }
+              }
             }
           }
         }
@@ -67,39 +69,50 @@ export async function action({ request }: ActionFunctionArgs) {
       const firstVariant = product.variants.edges[0]?.node;
       const price = firstVariant?.price || "0.00";
       const featuredImage = product.featuredImage?.src || null;
-      // Extract numeric ID from GraphQL ID (gid://shopify/ProductVariant/123456789 -> 123456789)
+      
+      // Extract numeric variant ID from GraphQL ID
       const variantId = firstVariant?.id ? firstVariant.id.split('/').pop() || null : null;
+
+      // Process all variants for this product with numeric IDs
+      const variants = product.variants.edges.map((variantEdge: any) => ({
+        id: variantEdge.node.id.split('/').pop(), // Store numeric ID
+        title: variantEdge.node.title,
+        price: variantEdge.node.price,
+        sku: variantEdge.node.sku
+      }));
 
       await (prisma as any).product.upsert({
         where: { shopifyId: product.id },
-                 update: {
-           title: product.title,
-           handle: product.handle,
-           description: product.bodyHtml || null,
-           featuredImage,
-           price,
-           currencyCode: "USD",
-           status: product.status,
-           vendor: product.vendor || null,
-           productType: product.productType || null,
-           tags: product.tags?.join(', ') || null,
-           variantId,
-           updatedAt: new Date(),
-         },
-                 create: {
-           shopifyId: product.id,
-           title: product.title,
-           handle: product.handle,
-           description: product.bodyHtml || null,
-           featuredImage,
-           price,
-           currencyCode: "USD",
-           status: product.status,
-           vendor: product.vendor || null,
-           productType: product.productType || null,
-           tags: product.tags?.join(', ') || null,
-           variantId,
-         },
+        update: {
+          title: product.title,
+          handle: product.handle,
+          description: product.bodyHtml || null,
+          featuredImage,
+          price,
+          currencyCode: "USD",
+          status: product.status,
+          vendor: product.vendor || null,
+          productType: product.productType || null,
+          tags: product.tags?.join(', ') || null,
+          variantId,
+          variants: JSON.stringify(variants), // Store all variants as JSON
+          updatedAt: new Date(),
+        },
+        create: {
+          shopifyId: product.id,
+          title: product.title,
+          handle: product.handle,
+          description: product.bodyHtml || null,
+          featuredImage,
+          price,
+          currencyCode: "USD",
+          status: product.status,
+          vendor: product.vendor || null,
+          productType: product.productType || null,
+          tags: product.tags?.join(', ') || null,
+          variantId,
+          variants: JSON.stringify(variants), // Store all variants as JSON
+        },
       });
       syncedCount++;
     }

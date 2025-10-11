@@ -199,7 +199,7 @@
         })
       });
     } catch (error) {
-      console.warn('Analytics tracking failed:', error);
+      // Analytics tracking failed silently
     }
   }
   
@@ -231,43 +231,41 @@
   }
   
   async function addToCart(variantId, quantity = 1) {
-    let numericId = variantId;
-    if (typeof variantId === 'string' && variantId.includes('gid://shopify/ProductVariant/')) {
-      numericId = variantId.split('/').pop();
+    const numericId = parseInt(variantId);
+    
+    if (isNaN(numericId)) {
+      throw new Error('Invalid variant ID');
     }
+    
+    // Use form data instead of JSON for better compatibility
+    const formData = new FormData();
+    formData.append('id', numericId.toString());
+    formData.append('quantity', quantity.toString());
     
     const response = await fetch('/cart/add.js', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        items: [{ id: parseInt(numericId), quantity }]
-      })
+      body: formData
     });
     
     if (!response.ok) {
-      throw new Error('Failed to add to cart');
+      const errorText = await response.text();
+      
+      // Check for sold out error
+      if (errorText.includes('sold out') || errorText.includes('unavailable') || errorText.includes('out of stock')) {
+        throw new Error('This product is currently sold out');
+      }
+      
+      throw new Error(`Failed to add to cart: ${response.status}`);
     }
     
     const data = await response.json();
     
-    // Trigger Shopify cart update
+    // Trigger cart update events
     if (window.Shopify && window.Shopify.onCartUpdate) {
       window.Shopify.onCartUpdate(data);
     }
     
     document.dispatchEvent(new CustomEvent('cart:updated', { detail: data }));
-    
-    // Update cart display
-    try {
-      const cartResponse = await fetch('/cart.js');
-      const cartData = await cartResponse.json();
-      
-      document.querySelectorAll('[data-cart-count], .cart-count, .cart-counter').forEach(el => {
-        el.textContent = cartData.item_count;
-      });
-    } catch (error) {
-      console.warn('Could not update cart display:', error);
-    }
     
     return data;
   }
@@ -359,7 +357,7 @@
         
         const variantId = slide.productVariantId || this.banner.productVariantId;
         if (!variantId) {
-          alert('Product variant not available');
+          alert('Product variant not available. Please select a variant.');
           return;
         }
 
@@ -369,11 +367,18 @@
           await addToCart(variantId);
           await trackEvent(this.banner.id, 'add_to_cart', slide.productId || this.banner.productId);
           
-          alert('Added to cart!');
-          setTimeout(() => window.location.reload(), 500);
+          alert('Added to cart successfully!');
+          // Reload page to update cart icon
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
         } catch (error) {
-          console.error('Add to cart error:', error);
-          alert('Failed to add to cart. Please try again.');
+          // Show specific error message
+          if (error.message.includes('sold out')) {
+            alert('This product is currently sold out. Please try another product.');
+          } else {
+            alert('Failed to add to cart. Please try again.');
+          }
         } finally {
           this.loading = false;
         }
@@ -512,16 +517,9 @@
                                 :style="'font-size: ' + (banner.productFontSize) + 'px; color: ' + (banner.messageColor)"
                                 x-text="slide.productTitle"
                               ></div>
-                              <template x-if="slide.productPrice">
-                                <div 
-                                  class="text-xs opacity-90"
-                                  :style="'font-size: ' + (banner.productFontSize) + 'px; color: ' + (banner.messageColor)"
-                                  x-text="(slide.productCurrencyCode) + ' ' + (slide.productPrice)"
-                                ></div>
-                              </template>
                             </div>
                             
-                            <template x-if="slide.actionType === 'add_to_cart' && slide.productVariantId">
+                            <template x-if="slide.actionType === 'add_to_cart'">
                               <button
                                 @click="handleAddToCart(slide)"
                                 :disabled="loading"
@@ -611,7 +609,7 @@
       }
       
     } catch (error) {
-      console.error('Banner initialization error:', error);
+      // Banner initialization error
       
       const defaultMessage = "{{ block.settings.default_message | default: 'Welcome to our store!' }}";
       rootElement.innerHTML = `

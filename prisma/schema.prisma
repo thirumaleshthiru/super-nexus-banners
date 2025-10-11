@@ -43,6 +43,7 @@ model Product {
   productType        String?
   tags               String?
   variantId          String?
+  variants           String?  // JSON string of all variants
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   banners            Banner[]
@@ -120,6 +121,7 @@ model BannerSlide {
   productId                   String?
   productTitle                String?
   productImage                String?
+  productVariantId            String?
   actionType                  String   @default("view_product")
   actionButtonText            String?
 

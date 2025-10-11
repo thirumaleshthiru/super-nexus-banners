@@ -4,6 +4,16 @@ import prisma from "app/db.server";
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
+    // Helper function to get product handle by ID
+    const getProductHandle = async (productId: string) => {
+      if (!productId) return null;
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { handle: true }
+      });
+      return product?.handle || null;
+    };
+
     const banners = await prisma.banner.findMany({
       where: { isActive: true },
       orderBy: [
@@ -43,8 +53,8 @@ export const loader: LoaderFunction = async ({ request }) => {
       return json({ banners: [] });
     }
 
-    return json({
-      banners: banners.map(banner => {
+    const result = json({
+      banners: await Promise.all(banners.map(async banner => {
         // Parse messages array robustly
         let parsedMessages: string[] = [];
         const messagesRaw: any = (banner as any).messages ?? "[]";
@@ -92,22 +102,37 @@ export const loader: LoaderFunction = async ({ request }) => {
           
           // Slides (new system) - takes precedence
           hasSlides,
-          slides: slides.map((slide: any) => ({
-            id: slide.id,
-            order: slide.order,
-            message: slide.message,
-            isTimer: slide.isTimer,
-            startTime: slide.startTime,
-            endTime: slide.endTime,
-            hasProduct: slide.hasProduct,
-            productId: slide.productId,
-            productTitle: slide.productTitle,
-            productHandle: slide.product?.handle || null,
-            productPrice: slide.product?.price || null,
-            productCurrencyCode: slide.product?.currencyCode || "USD",
-            productVariantId: slide.product?.variantId || null,
-            actionType: slide.actionType || "view_product",
-            actionButtonText: slide.actionButtonText || "View Product",
+          slides: await Promise.all(slides.map(async (slide: any) => {
+            // Get product handle from relation or fallback to database lookup
+            let productHandle = slide.product?.handle || null;
+            if (!productHandle && slide.productId) {
+              // Fallback: find product in banner's product relation
+              const bannerProduct = (banner as any).product;
+              if (bannerProduct && bannerProduct.id === slide.productId) {
+                productHandle = bannerProduct.handle;
+              } else {
+                // Last resort: lookup from database
+                productHandle = await getProductHandle(slide.productId);
+              }
+            }
+            
+            return {
+              id: slide.id,
+              order: slide.order,
+              message: slide.message,
+              isTimer: slide.isTimer,
+              startTime: slide.startTime,
+              endTime: slide.endTime,
+              hasProduct: slide.hasProduct,
+              productId: slide.productId,
+              productTitle: slide.productTitle || slide.product?.title || null,
+              productHandle: productHandle,
+              productPrice: slide.product?.price || null,
+              productCurrencyCode: slide.product?.currencyCode || "USD",
+              productVariantId: slide.productVariantId,
+              actionType: slide.actionType || "view_product",
+              actionButtonText: slide.actionButtonText || "View Product",
+            };
           })),
           
           // Legacy Message Carousel System - ONLY admin values
@@ -161,8 +186,10 @@ export const loader: LoaderFunction = async ({ request }) => {
           createdAt: banner.createdAt.toISOString(),
           updatedAt: banner.updatedAt.toISOString()
         };
-      })
+      }))
     });
+    
+    return result;
   } catch (err) {
     console.error("Error fetching banners:", err);
     return json({ error: "Internal server error", banners: [] }, { status: 500 });
