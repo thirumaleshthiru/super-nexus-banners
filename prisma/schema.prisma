@@ -48,6 +48,8 @@ model Product {
   updatedAt          DateTime @updatedAt
   banners            Banner[]
   bannerSlides       BannerSlide[]
+  bottomBanners      BottomBanner[]
+  bottomBannerSlides BottomBannerSlide[]
 }
 
 model Banner {
@@ -141,6 +143,119 @@ model BannerAnalytics {
   banner       Banner   @relation(fields: [bannerId], references: [id], onDelete: Cascade)
 
   @@index([bannerId, eventType])
+  @@index([timestamp])
+  @@index([shopDomain])
+}
+
+model BottomBanner {
+  id                          String            @id @default(cuid())
+  isActive                    Boolean           @default(false)
+  bannerWidth                 String            @default("full")
+  customWidth                 String?
+  bannerHeight                String            @default("auto")
+  customHeight                String?
+  bannerPadding               String            @default("12")
+  bannerLeftMargin            String            @default("0")
+  bannerRightMargin           String            @default("0")
+  bannerTopMargin             String            @default("0")
+  bannerBottomMargin          String            @default("0")
+  bannerBorderRadius          String            @default("8")
+  priority                    Int               @default(0)
+  areMessagesCarousel         Boolean           @default(false)
+  messages                    String
+  messageFontSize             String            @default("16")
+  messagePosition             String            @default("left")
+  messageColor                String            @default("#1a1a1a")
+  messagePadding              String            @default("8")
+  isTimer                     Boolean           @default(false)
+  startTime                   DateTime?
+  endTime                     DateTime?
+  timerBackgroundColor        String            @default("rgba(0,0,0,0.1)")
+  timerBorderColor            String            @default("rgba(0,0,0,0.15)")
+  timerPadding                String            @default("6")
+  timerTextColor              String            @default("#1a1a1a")
+  timerFontSize               String            @default("14")
+  hasProduct                  Boolean           @default(false)
+  productId                   String?
+  productTitle                String?
+  productImage                String?
+  showImage                   Boolean           @default(false)
+  priceOverride               String?
+  couponCode                  String?
+  productFontSize             String            @default("14")
+  actionType                  String            @default("view_product")
+  actionButtonText            String?
+  actionButtonTextColor       String            @default("#ffffff")
+  actionButtonBackgroundColor String            @default("#1a1a1a")
+  actionButtonBorderRadius    String            @default("6")
+  actionButtonPadding         String            @default("8")
+  showAddToCartButton         Boolean           @default(false)
+  showViewProductButton       Boolean           @default(false)
+  addToCartButtonText         String            @default("Add to Cart")
+  viewProductButtonText       String            @default("View Product")
+  addToCartButtonTextColor    String            @default("#ffffff")
+  addToCartButtonBackgroundColor String         @default("#007cba")
+  viewProductButtonTextColor  String            @default("#ffffff")
+  viewProductButtonBackgroundColor String       @default("#1a1a1a")
+  bgColor                     String            @default("#f7f7f7")
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @updatedAt
+  product                     Product?          @relation(fields: [productId], references: [id])
+  analytics                   BottomBannerAnalytics[]
+  slides                      BottomBannerSlide[]
+}
+
+model BottomBannerSlide {
+  id                          String   @id @default(cuid())
+  bottomBannerId              String
+  order                       Int      @default(0)
+
+  // Per-slide content
+  message                     String
+
+  // Per-slide timer
+  isTimer                     Boolean  @default(false)
+  startTime                   DateTime?
+  endTime                     DateTime?
+
+  // Per-slide product linkage
+  hasProduct                  Boolean  @default(false)
+  productId                   String?
+  productTitle                String?
+  productImage                String?
+  showImage                   Boolean  @default(false)
+  priceOverride               String?
+  couponCode                  String?
+  productVariantId            String?
+  actionType                  String   @default("view_product")
+  actionButtonText            String?
+  showAddToCartButton         Boolean  @default(false)
+  showViewProductButton       Boolean  @default(false)
+  addToCartButtonText         String   @default("Add to Cart")
+  viewProductButtonText       String   @default("View Product")
+
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  // Relations
+  bottomBanner                BottomBanner @relation(fields: [bottomBannerId], references: [id], onDelete: Cascade)
+  product                     Product? @relation(fields: [productId], references: [id])
+
+  @@index([bottomBannerId, order])
+}
+
+model BottomBannerAnalytics {
+  id           String   @id @default(cuid())
+  bottomBannerId String
+  eventType    String
+  timestamp    DateTime @default(now())
+  sessionId    String?
+  shopDomain   String
+  productId    String?
+  messageIndex Int?
+  bottomBanner BottomBanner @relation(fields: [bottomBannerId], references: [id], onDelete: Cascade)
+
+  @@index([bottomBannerId, eventType])
   @@index([timestamp])
   @@index([shopDomain])
 }

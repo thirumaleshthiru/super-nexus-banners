@@ -1,0 +1,896 @@
+{% comment %}
+  Professional Bottom Banner System v1.0
+  Fixed positioning at bottom of page with multiple buttons support
+{% endcomment %}
+
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    padding-bottom: 80px !important; /* Add space for fixed bottom banner */
+  }
+  
+  /* Override any theme styles that might interfere */
+  .bottom-banner-wrapper {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 999999 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    top: auto !important;
+  }
+  
+  .bottom-banner-wrapper .bottom-banner-container {
+    position: relative !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .bottom-banner-wrapper {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 999999 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    pointer-events: auto !important;
+  }
+  
+  [x-cloak] { display: none !important; }
+  
+  .bottom-banner-container * {
+    font-family: inherit !important;
+  }
+  
+  /* Smooth horizontal slide animation */
+  .bottom-banner-slides-wrapper {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+  }
+  
+  .bottom-banner-slides-container {
+    display: flex;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+  
+  .bottom-banner-slide {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+  
+  .bottom-banner-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .timer-segment {
+    min-width: 2.5rem;
+    text-align: center;
+  }
+  
+  .product-image-wrapper {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .product-image-wrapper img {
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  
+  .product-image-wrapper:hover img {
+    transform: scale(1.05);
+  }
+  
+  .bottom-banner-inner-container {
+    position: relative;
+  }
+  
+  /* Justified Horizontal Layout */
+  .bottom-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 16px;
+  }
+  
+  .banner-item {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+  }
+  
+  .product-section {
+    flex: 1.2;
+    justify-content: flex-start;
+  }
+  
+  .coupon-section {
+    flex: 0.8;
+  }
+  
+  .banner-message {
+    flex: 1.5;
+  }
+  
+  .timer-section {
+    flex: 0.8;
+  }
+  
+  .banner-buttons {
+    flex: 1;
+    justify-content: flex-end;
+  }
+  
+  .product-section {
+    gap: 12px;
+  }
+  
+  .product-image-container {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .product-title {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  
+  .price-display {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  
+  .banner-message {
+    line-height: 1.4;
+    flex: 1;
+  }
+  
+  .coupon-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .coupon-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .coupon-label {
+    color: #92400e;
+  }
+  
+  .coupon-code {
+    color: #b45309;
+    font-family: monospace;
+    font-weight: 700;
+  }
+  
+  .timer-section {
+    display: flex;
+    align-items: center;
+  }
+  
+  .timer-container {
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    border: 1px solid #d1d5db;
+  }
+  
+  .timer-text {
+    font-weight: 600;
+    font-family: monospace;
+  }
+  
+  .banner-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+  }
+  
+  .btn:hover {
+    opacity: 0.9;
+  }
+  
+  .btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .loading-text {
+    opacity: 0.7;
+  }
+  
+  .simple-message {
+    text-align: center;
+    width: 100%;
+  }
+  
+  .simple-message p {
+    margin: 0;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    body {
+      padding-bottom: 100px !important;
+    }
+    
+    .bottom-banner-content {
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px;
+    }
+    
+    .banner-left-content {
+      flex-direction: column;
+      text-align: center;
+      gap: 12px;
+    }
+    
+    .product-image-container {
+      width: 80px;
+      height: 80px;
+    }
+    
+    .banner-buttons {
+      flex-direction: column;
+      width: 100%;
+      gap: 8px;
+    }
+    
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .timer-container {
+      padding: 6px 12px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    body {
+      padding-bottom: 120px !important;
+    }
+    
+    .bottom-banner-content {
+      padding: 12px;
+    }
+    
+    .product-image-container {
+      width: 60px;
+      height: 60px;
+    }
+    
+    .banner-message {
+      font-size: 13px;
+    }
+    
+    .product-title {
+      font-size: 15px;
+    }
+    
+    .price-display {
+      font-size: 16px;
+    }
+  }
+</style>
+
+<div id="bottom-banner-root"></div>
+
+<script>
+(function() {
+  'use strict';
+  
+  const BOTTOM_BANNER_API = '/apps/banners-1/activebottombanners';
+  const ANALYTICS_API = '/apps/banners/analytics';
+  const FETCH_TIMEOUT = 5000;
+  
+  async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...options.headers
+        }
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
+  }
+  
+  function generateSessionId() {
+    try {
+      return btoa(navigator.userAgent + Date.now()).slice(0, 16);
+    } catch {
+      return 'anonymous-' + Date.now();
+    }
+  }
+  
+  function getShopDomain() {
+    return window.Shopify?.shop || window.location.host;
+  }
+  
+  async function trackEvent(bottomBannerId, eventType, productId = null) {
+    try {
+      await fetchWithTimeout(ANALYTICS_API, {
+        method: 'POST',
+        body: JSON.stringify({
+          bottomBannerId,
+          eventType,
+          sessionId: generateSessionId(),
+          shopDomain: getShopDomain(),
+          productId
+        })
+      });
+    } catch (error) {
+      // Analytics tracking failed silently
+    }
+  }
+  
+  function calculateTimeRemaining(endTime) {
+    const now = new Date();
+    const end = new Date(endTime);
+    const distance = end - now;
+    
+    if (distance <= 0) {
+      return { expired: true, days: 0, hours: 0, minutes: 0, seconds: 0 };
+    }
+    
+    return {
+      expired: false,
+      days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+      minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+      seconds: Math.floor((distance % (1000 * 60)) / 1000)
+    };
+  }
+  
+  function formatTimer(time) {
+    const parts = [];
+    if (time.days > 0) parts.push(`${time.days}d`);
+    if (time.hours > 0) parts.push(`${time.hours}h`);
+    if (time.minutes > 0) parts.push(`${time.minutes}m`);
+    parts.push(`${time.seconds}s`);
+    return parts.join(' ');
+  }
+  
+  async function addToCart(variantId, quantity = 1) {
+    const numericId = parseInt(variantId);
+    
+    if (isNaN(numericId)) {
+      throw new Error('Invalid variant ID');
+    }
+    
+    // Use form data instead of JSON for better compatibility
+    const formData = new FormData();
+    formData.append('id', numericId.toString());
+    formData.append('quantity', quantity.toString());
+    
+    const response = await fetch('/cart/add.js', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      
+      // Check for sold out error
+      if (errorText.includes('sold out') || errorText.includes('unavailable') || errorText.includes('out of stock')) {
+        throw new Error('This product is currently sold out');
+      }
+      
+      throw new Error(`Failed to add to cart: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Trigger cart update events
+    if (window.Shopify && window.Shopify.onCartUpdate) {
+      window.Shopify.onCartUpdate(data);
+    }
+    
+    document.dispatchEvent(new CustomEvent('cart:updated', { detail: data }));
+    
+    return data;
+  }
+  
+  function bottomBannerComponent(bottomBannerData) {
+    return {
+      bottomBanner: bottomBannerData,
+      currentSlideIndex: 0,
+      timers: {},
+      closed: false,
+      loading: false,
+      
+      init() {
+        console.log('Initializing bottom banner component:', this.bottomBanner);
+        trackEvent(this.bottomBanner.id, 'view', this.getCurrentProductId());
+        
+        if (this.bottomBanner.hasSlides && this.bottomBanner.slides && this.bottomBanner.slides.length > 0) {
+          console.log('Setting up slides:', this.bottomBanner.slides);
+          this.bottomBanner.slides.forEach((slide, index) => {
+            if (slide.isTimer && slide.endTime) {
+              this.initTimer(index, slide.endTime);
+            }
+          });
+        } else if (this.bottomBanner.isTimer && this.bottomBanner.endTime) {
+          this.initTimer('main', this.bottomBanner.endTime);
+        }
+        
+        if (this.bottomBanner.hasSlides && this.bottomBanner.slides && this.bottomBanner.slides.length > 1) {
+          console.log('Setting up carousel with', this.bottomBanner.slides.length, 'slides');
+          this.setupCarousel();
+        }
+      },
+      
+      destroy() {
+        Object.values(this.timers).forEach(timer => {
+          if (timer.interval) clearInterval(timer.interval);
+        });
+      },
+      
+      initTimer(key, endTime) {
+        const updateTimer = () => {
+          const time = calculateTimeRemaining(endTime);
+          this.timers[key] = { ...time, formatted: formatTimer(time) };
+          
+          if (time.expired) {
+            if (this.timers[key].interval) {
+              clearInterval(this.timers[key].interval);
+            }
+            this.closed = true;
+          }
+        };
+        
+        updateTimer();
+        this.timers[key] = {
+          ...this.timers[key],
+          interval: setInterval(updateTimer, 1000)
+        };
+      },
+      
+      setupCarousel() {
+        console.log('Setting up carousel interval');
+        setInterval(() => {
+          if (!this.closed) {
+            console.log('Auto-advancing slide from', this.currentSlideIndex, 'to', (this.currentSlideIndex + 1) % this.bottomBanner.slides.length);
+            this.nextSlide();
+          }
+        }, 5000);
+      },
+
+      nextSlide() {
+        const oldIndex = this.currentSlideIndex;
+        this.currentSlideIndex = (this.currentSlideIndex + 1) % this.bottomBanner.slides.length;
+        console.log('Slide changed from', oldIndex, 'to', this.currentSlideIndex);
+      },
+      
+      prevSlide() {
+        this.currentSlideIndex = this.currentSlideIndex === 0 
+          ? this.bottomBanner.slides.length - 1 
+          : this.currentSlideIndex - 1;
+      },
+      
+      getCurrentSlide() {
+        if (this.bottomBanner.hasSlides && this.bottomBanner.slides.length > 0) {
+          return this.bottomBanner.slides[this.currentSlideIndex];
+        }
+        return this.bottomBanner;
+      },
+      
+      getCurrentProductId() {
+        const slide = this.getCurrentSlide();
+        return slide.productId || this.bottomBanner.productId || null;
+      },
+      
+      async handleAddToCart(slide) {
+        if (this.loading) return;
+        
+        const variantId = slide.productVariantId || this.bottomBanner.productVariantId;
+        if (!variantId) {
+          alert('Product variant not available. Please select a variant.');
+          return;
+        }
+
+        this.loading = true;
+        
+        try {
+          await addToCart(variantId);
+          await trackEvent(this.bottomBanner.id, 'add_to_cart', slide.productId || this.bottomBanner.productId);
+          
+          alert('Added to cart successfully!');
+          // Reload page to update cart icon
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } catch (error) {
+          // Show specific error message
+          if (error.message.includes('sold out')) {
+            alert('This product is currently sold out. Please try another product.');
+          } else {
+            alert('Failed to add to cart. Please try again.');
+          }
+        } finally {
+          this.loading = false;
+        }
+      },
+      
+      handleViewProduct(slide) {
+        const handle = slide.productHandle || this.bottomBanner.productHandle;
+        if (!handle) {
+          alert('Product not available');
+          return;
+        }
+        
+        trackEvent(this.bottomBanner.id, 'view_product', slide.productId || this.bottomBanner.productId);
+        window.location.href = `/products/${handle}`;
+      },
+      
+      copyCouponCode(code) {
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(code).then(() => {
+            this.showCopiedFeedback();
+          }).catch(() => {
+            this.fallbackCopyTextToClipboard(code);
+          });
+        } else {
+          this.fallbackCopyTextToClipboard(code);
+        }
+      },
+      
+      fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          this.showCopiedFeedback();
+        } catch (err) {
+          console.error('Fallback: Oops, unable to copy', err);
+        }
+        document.body.removeChild(textArea);
+      },
+      
+      showCopiedFeedback() {
+        // Find all coupon code elements and temporarily change their text
+        const couponCodes = document.querySelectorAll('.coupon-code');
+        couponCodes.forEach(element => {
+          const originalText = element.textContent;
+          element.textContent = '✓ Copied!';
+          element.style.color = '#059669'; // Green color for success
+          
+          setTimeout(() => {
+            element.textContent = originalText;
+            element.style.color = '#b45309'; // Back to original color
+          }, 1500);
+        });
+      },
+      
+      getContainerStyle() {
+        const styles = [];
+        
+        if (this.bottomBanner.bgColor) {
+          styles.push(`background-color: ${this.bottomBanner.bgColor}`);
+        }
+        
+        if (this.bottomBanner.messageColor) {
+          styles.push(`color: ${this.bottomBanner.messageColor}`);
+        }
+        
+        if (this.bottomBanner.bannerBorderRadius !== null && this.bottomBanner.bannerBorderRadius !== undefined) {
+          styles.push(`border-radius: ${this.bottomBanner.bannerBorderRadius}px`);
+        }
+        
+        if (this.bottomBanner.bannerPadding !== null && this.bottomBanner.bannerPadding !== undefined) {
+          styles.push(`padding: ${this.bottomBanner.bannerPadding}px`);
+        }
+        
+        if (this.bottomBanner.bannerTopMargin !== null && this.bottomBanner.bannerTopMargin !== undefined) {
+          styles.push(`margin-top: ${this.bottomBanner.bannerTopMargin}px`);
+        }
+        if (this.bottomBanner.bannerBottomMargin !== null && this.bottomBanner.bannerBottomMargin !== undefined) {
+          styles.push(`margin-bottom: ${this.bottomBanner.bannerBottomMargin}px`);
+        }
+        if (this.bottomBanner.bannerLeftMargin !== null && this.bottomBanner.bannerLeftMargin !== undefined) {
+          styles.push(`margin-left: ${this.bottomBanner.bannerLeftMargin}px`);
+        }
+        if (this.bottomBanner.bannerRightMargin !== null && this.bottomBanner.bannerRightMargin !== undefined) {
+          styles.push(`margin-right: ${this.bottomBanner.bannerRightMargin}px`);
+        }
+        
+        if (this.bottomBanner.customHeight && this.bottomBanner.bannerHeight !== 'auto') {
+          styles.push(`height: ${this.bottomBanner.customHeight}px`);
+        }
+        
+        if (this.bottomBanner.bannerWidth === 'custom' && this.bottomBanner.customWidth) {
+          styles.push(`width: ${this.bottomBanner.customWidth}%`);
+          styles.push(`margin-left: auto`);
+          styles.push(`margin-right: auto`);
+        }
+        
+        return styles.join('; ');
+      },
+      
+      getSlideTransform() {
+        return `translateX(-${this.currentSlideIndex * 100}%)`;
+      }
+    };
+  }
+  
+  function renderBottomBanner(bottomBanner) {
+    return `
+      <div class="bottom-banner-wrapper">
+        <div 
+          x-data="bottomBannerComponent(${JSON.stringify(bottomBanner).replace(/"/g, '&quot;')})"
+          x-show="!closed"
+          x-cloak
+          class="bottom-banner-container"
+        >
+          <div 
+            :style="getContainerStyle()"
+            class="bottom-banner-transition bottom-banner-inner-container"
+          >
+            <div class="bottom-banner-slides-wrapper">
+              <div class="bottom-banner-slides-container" :style="'transform: ' + getSlideTransform()">
+                
+                <template x-if="bottomBanner.hasSlides && bottomBanner.slides && bottomBanner.slides.length > 0">
+                  <template x-for="(slide, index) in bottomBanner.slides" :key="index">
+                    <div class="bottom-banner-slide">
+                      <div class="bottom-banner-content">
+                        
+                        <!-- Product Section (Image + Title + Price) -->
+                        <div class="banner-item product-section">
+                          <template x-if="slide.showImage && slide.productImage">
+                            <div 
+                              class="product-image-container"
+                              :style="'width: ' + (bottomBanner.productFontSize * 3) + 'px; height: ' + (bottomBanner.productFontSize * 3) + 'px; border-radius: ' + (bottomBanner.bannerBorderRadius / 2) + 'px'"
+                            >
+                              <img 
+                                :src="slide.productImage" 
+                                :alt="slide.productTitle"
+                                class="product-image"
+                                @error="this.style.display='none'"
+                              />
+                            </div>
+                          </template>
+                          
+                          <template x-if="slide.hasProduct && slide.productTitle">
+                            <div 
+                              class="product-title" 
+                              x-text="slide.productTitle"
+                              :style="'font-size: ' + (bottomBanner.productFontSize) + 'px; color: ' + (bottomBanner.messageColor) + '; font-weight: 600; margin: 0 8px'"
+                            ></div>
+                          </template>
+                          
+                          <template x-if="slide.priceOverride">
+                            <div 
+                              class="price-display" 
+                              x-text="slide.priceOverride"
+                              :style="'font-size: ' + (bottomBanner.productFontSize) + 'px; color: ' + (bottomBanner.messageColor) + '; font-weight: 700; margin: 0 8px'"
+                            ></div>
+                          </template>
+                        </div>
+                        
+                        <!-- Coupon Code -->
+                        <template x-if="slide.couponCode">
+                          <div class="banner-item coupon-section">
+                            <div 
+                              class="coupon-badge"
+                              :style="'background: #fef3c7; border: 1px solid #f59e0b; border-radius: ' + (bottomBanner.bannerBorderRadius / 2) + 'px; padding: ' + (bottomBanner.messagePadding / 2) + 'px ' + (bottomBanner.messagePadding) + 'px; font-size: ' + (bottomBanner.messageFontSize - 2) + 'px; position: relative; cursor: pointer;'"
+                              @click="copyCouponCode(slide.couponCode)"
+                            >
+                              <div class="coupon-dots" style="position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border: 2px dotted #f59e0b; border-radius: inherit; pointer-events: none;"></div>
+                              <span class="coupon-label" style="color: #92400e;">Code:</span>
+                              <span class="coupon-code" x-text="slide.couponCode" style="color: #b45309; font-family: monospace; font-weight: 700;"></span>
+                            </div>
+                          </div>
+                        </template>
+                        
+                        <!-- Message -->
+                        <template x-if="slide.message">
+                          <div 
+                            class="banner-item banner-message" 
+                            x-text="slide.message"
+                            :style="'font-size: ' + (bottomBanner.messageFontSize) + 'px; color: ' + (bottomBanner.messageColor) + '; padding: ' + (bottomBanner.messagePadding) + 'px; font-weight: 500; line-height: 1.4'"
+                          ></div>
+                        </template>
+                        
+                        <!-- Timer -->
+                        <template x-if="slide.isTimer && slide.endTime">
+                          <div class="banner-item timer-section">
+                            <div 
+                              class="timer-container"
+                              :style="'background: ' + (bottomBanner.timerBackgroundColor) + '; border: 1px solid ' + (bottomBanner.timerBorderColor) + '; color: ' + (bottomBanner.timerTextColor) + '; font-size: ' + (bottomBanner.timerFontSize) + 'px; padding: ' + (bottomBanner.timerPadding) + 'px'"
+                            >
+                              <div class="timer-text" x-text="timers[index]?.formatted || 'Loading...'"></div>
+                            </div>
+                          </div>
+                        </template>
+                        
+                        <!-- Buttons -->
+                        <template x-if="slide.hasProduct && (slide.showAddToCartButton || slide.showViewProductButton)">
+                          <div class="banner-item banner-buttons">
+                            
+                            <template x-if="slide.showAddToCartButton">
+                              <button
+                                @click="handleAddToCart(slide)"
+                                :disabled="loading"
+                                class="btn"
+                                :style="'background: ' + (slide.addToCartButtonBackgroundColor || bottomBanner.addToCartButtonBackgroundColor) + '; color: ' + (slide.addToCartButtonTextColor || bottomBanner.addToCartButtonTextColor) + '; border-radius: ' + (bottomBanner.actionButtonBorderRadius) + 'px; padding: ' + (bottomBanner.actionButtonPadding) + 'px ' + (bottomBanner.actionButtonPadding * 1.5) + 'px; font-size: ' + (bottomBanner.productFontSize) + 'px; font-weight: 600; border: none; cursor: pointer; transition: opacity 0.2s ease'"
+                              >
+                                <span x-show="!loading" x-text="slide.addToCartButtonText"></span>
+                                <span x-show="loading" class="loading-text">Adding...</span>
+                              </button>
+                            </template>
+                            
+                            <template x-if="slide.showViewProductButton">
+                              <button
+                                @click="handleViewProduct(slide)"
+                                class="btn"
+                                :style="'background: ' + (slide.viewProductButtonBackgroundColor || bottomBanner.viewProductButtonBackgroundColor) + '; color: ' + (slide.viewProductButtonTextColor || bottomBanner.viewProductButtonTextColor) + '; border-radius: ' + (bottomBanner.actionButtonBorderRadius) + 'px; padding: ' + (bottomBanner.actionButtonPadding) + 'px ' + (bottomBanner.actionButtonPadding * 1.5) + 'px; font-size: ' + (bottomBanner.productFontSize) + 'px; font-weight: 600; border: none; cursor: pointer; transition: opacity 0.2s ease'"
+                              >
+                                <span x-text="slide.viewProductButtonText"></span>
+                              </button>
+                            </template>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </template>
+                
+                <template x-if="!bottomBanner.hasSlides || bottomBanner.slides.length === 0">
+                  <div class="bottom-banner-slide">
+                    <div class="bottom-banner-content">
+                      <div class="simple-message">
+                        <p x-text="bottomBanner.messages && bottomBanner.messages[0] ? bottomBanner.messages[0] : ''"></p>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  async function init() {
+    const rootElement = document.getElementById('bottom-banner-root');
+    if (!rootElement) return;
+    
+    try {
+      const response = await fetchWithTimeout(BOTTOM_BANNER_API);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch bottom banners');
+      }
+
+      const data = await response.json();
+      const bottomBanners = data.bottomBanners || [];
+      
+      console.log('Bottom banners data:', data);
+      console.log('Bottom banners array:', bottomBanners);
+      
+      if (bottomBanners.length === 0) {
+        return; // Don't show anything if no bottom banners
+      }
+      
+      bottomBanners.sort((a, b) => (a.priority || 0) - (b.priority || 0));
+      
+      const bottomBannersHTML = bottomBanners.map(renderBottomBanner).join('');
+      
+      // Create a new container that will be injected into the page
+      const bottomBannerContainer = document.createElement('div');
+      bottomBannerContainer.innerHTML = bottomBannersHTML;
+      
+      // Inject the banner at the end of the body, not in the root element
+      document.body.appendChild(bottomBannerContainer);
+      
+      // Ensure the banner stays fixed at bottom on all pages
+      const bannerWrapper = document.querySelector('.bottom-banner-wrapper');
+      if (bannerWrapper) {
+        bannerWrapper.style.position = 'fixed';
+        bannerWrapper.style.bottom = '0';
+        bannerWrapper.style.left = '0';
+        bannerWrapper.style.right = '0';
+        bannerWrapper.style.zIndex = '999999';
+        bannerWrapper.style.width = '100%';
+        bannerWrapper.style.pointerEvents = 'auto';
+      }
+      
+    } catch (error) {
+      // Bottom banner initialization error - fail silently
+      console.log('Bottom banner initialization failed:', error);
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+  window.bottomBannerComponent = bottomBannerComponent;
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Bottom Banner System",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "default_message",
+      "label": "Default Message",
+      "default": "Welcome to our store!",
+      "info": "Displayed when no active bottom banners are available"
+    }
+  ]
+}
+{% endschema %}

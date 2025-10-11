@@ -27,6 +27,8 @@ export default function App() {
         <Link to="/app/sync-products">Sync Products</Link>
         <Link to="/app/manage-banners">Manage Banners</Link>
         <Link to="/app/banner-analytics">Banner Analytics</Link>
+        <Link to="/app/create-bottom-banner">Create Bottom Banner</Link>
+        <Link to="/app/manage-bottom-banners">Manage Bottom Banners</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>
