@@ -110,7 +110,6 @@ export async function action({ request }: ActionFunctionArgs) {
     const bannerTopMargin = String(formData.get("bannerTopMargin") || "0")
     const bannerBottomMargin = String(formData.get("bannerBottomMargin") || "0")
     const bannerBorderRadius = String(formData.get("bannerBorderRadius") || "8")
-    const position = String(formData.get("position") || "static")
     const priority = Number.parseInt(String(formData.get("priority") || "0"))
 
     // Message Carousel System (legacy, keep for backward compatibility)
@@ -144,10 +143,6 @@ export async function action({ request }: ActionFunctionArgs) {
     const actionButtonBorderRadius = String(formData.get("actionButtonBorderRadius") || "4")
     const actionButtonPadding = String(formData.get("actionButtonPadding") || "8")
 
-    // Responsive Design
-    const responsiveDetails = String(formData.get("responsiveDetails") || "row")
-    const responsiveFonts = String(formData.get("responsiveFonts") || "auto")
-
     // Background
     const bgColor = String(formData.get("bgColor") || "#ff0000")
 
@@ -167,7 +162,6 @@ export async function action({ request }: ActionFunctionArgs) {
         bannerTopMargin,
         bannerBottomMargin,
         bannerBorderRadius,
-        position,
         priority,
         areMessagesCarousel,
         messages,
@@ -194,8 +188,6 @@ export async function action({ request }: ActionFunctionArgs) {
         actionButtonBackgroundColor,
         actionButtonBorderRadius,
         actionButtonPadding,
-        responsiveDetails,
-        responsiveFonts,
         bgColor,
       },
     })
@@ -264,7 +256,6 @@ export default function CreateBannerPage() {
   const [bannerTopMargin, setBannerTopMargin] = useState("0")
   const [bannerBottomMargin, setBannerBottomMargin] = useState("0")
   const [bannerBorderRadius, setBannerBorderRadius] = useState("8")
-  const [position, setPosition] = useState("static")
   const [priority, setPriority] = useState("0")
 
   // Slide System - replaces message/timer/product separate systems
@@ -304,10 +295,6 @@ export default function CreateBannerPage() {
   const [actionButtonBackgroundColor, setActionButtonBackgroundColor] = useState("#1a1a1a")
   const [actionButtonBorderRadius, setActionButtonBorderRadius] = useState("6")
   const [actionButtonPadding, setActionButtonPadding] = useState("8")
-
-  // Responsive Design
-  const [responsiveDetails, setResponsiveDetails] = useState("row")
-  const [responsiveFonts, setResponsiveFonts] = useState("auto")
 
   // Background
   const [bgColor, setBgColor] = useState("#f7f7f7")
@@ -777,19 +764,6 @@ export default function CreateBannerPage() {
                         autoComplete="off"
                         helpText="Rounded corners for the banner"
                       />
-
-                      <Select
-                        label="Banner Position"
-                        name="position"
-                        options={[
-                          { label: "Static (Normal flow)", value: "static" },
-                          { label: "Top Fixed", value: "top_fixed" },
-                          { label: "Bottom Fixed", value: "bottom_fixed" },
-                        ]}
-                        value={position}
-                        onChange={setPosition}
-                        helpText="Static: placed where admin adds the block. Fixed: stays at top/bottom of viewport"
-                      />
                     </BlockStack>
                   </Card>
 
@@ -890,39 +864,6 @@ export default function CreateBannerPage() {
                     </BlockStack>
                   </Card>
 
-                  {/* Responsive Design */}
-                  <Card>
-                    <BlockStack gap="300">
-                      <Text as="h3" variant="headingMd">
-                        Responsive Design
-                      </Text>
-
-                      <Select
-                        label="Layout Direction"
-                        name="responsiveDetails"
-                        options={[
-                          { label: "Row", value: "row" },
-                          { label: "Column", value: "column" },
-                          { label: "Stretch", value: "stretch" },
-                          { label: "Wrap", value: "wrap" },
-                        ]}
-                        value={responsiveDetails}
-                        onChange={setResponsiveDetails}
-                        helpText="How elements are arranged on mobile devices"
-                      />
-
-                      <Select
-                        label="Font Scaling"
-                        name="responsiveFonts"
-                        options={[
-                          { label: "Auto", value: "auto" },
-                          { label: "Small (compared to desktop)", value: "small" },
-                        ]}
-                        value={responsiveFonts}
-                        onChange={setResponsiveFonts}
-                      />
-                    </BlockStack>
-                  </Card>
 
                   {/* Background */}
                   <Card>

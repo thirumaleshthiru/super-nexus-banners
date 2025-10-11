@@ -23,32 +23,6 @@
     margin: 0 !important;
   }
   
-  .banner-full-width-wrapper.position-top-fixed,
-  .banner-full-width-wrapper.position-bottom-fixed {
-    position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100vw !important;
-    margin-left: calc(-1 * (100vw - 100%) / 2) !important;
-    margin-right: 0 !important;
-    padding: 0 !important;
-    z-index: 99999 !important;
-  }
-  
-  .banner-full-width-wrapper.position-top-fixed {
-    top: 0 !important;
-  }
-  
-  .banner-full-width-wrapper.position-bottom-fixed {
-    bottom: 0 !important;
-  }
-  
-  .banner-full-width-wrapper.position-static {
-    position: static;
-    width: 100%;
-    z-index: 99999;
-  }
-  
   [x-cloak] { display: none !important; }
   
   .banner-container * {
@@ -96,28 +70,9 @@
     transform: scale(1.05);
   }
   
-  .close-button {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    transition: all 0.2s ease;
-    z-index: 10;
-    flex-shrink: 0;
-  }
-  
-  .close-button:hover {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
   
   .banner-inner-container {
     position: relative;
-  }
-  
-  .banner-full-width-wrapper.position-top-fixed .banner-inner-container,
-  .banner-full-width-wrapper.position-bottom-fixed .banner-inner-container {
-    width: 100% !important;
-    max-width: none !important;
   }
   
   @media (max-width: 768px) {
@@ -132,12 +87,6 @@
     .banner-content > button {
       width: auto !important;
       justify-content: center !important;
-    }
-    
-    
-    .close-button {
-      top: 4px;
-      right: 4px;
     }
   }
 </style>
@@ -395,11 +344,6 @@
         window.location.href = `/products/${handle}`;
       },
       
-      handleClose() {
-        trackEvent(this.banner.id, 'close', this.getCurrentProductId());
-        this.closed = true;
-        this.destroy();
-      },
       
       getContainerStyle() {
         const styles = [];
@@ -455,14 +399,8 @@
   }
   
   function renderBanner(banner) {
-    let position = banner.position || 'static';
-    position = position.replace(/-/g, '_');
-    position = position.replace(/_/g, '-');
-    
-    const positionClass = `position-${position}`;
-    
     return `
-      <div class="banner-full-width-wrapper ${positionClass}">
+      <div class="banner-full-width-wrapper">
         <div 
           x-data="bannerComponent(${JSON.stringify(banner).replace(/"/g, '&quot;')})"
           x-show="!closed"
@@ -587,7 +525,7 @@
       if (banners.length === 0) {
         const defaultMessage = "{{ block.settings.default_message | default: 'Welcome to our store!' }}";
         rootElement.innerHTML = `
-          <div class="banner-full-width-wrapper position-static">
+          <div class="banner-full-width-wrapper">
             <div style="background: #f7f7f7; color: #1a1a1a; padding: 20px; position: relative; border-radius: 8px;">
               <p class="m-0" style="font-size: 16px;">${defaultMessage}</p>
             </div>
@@ -613,7 +551,7 @@
       
       const defaultMessage = "{{ block.settings.default_message | default: 'Welcome to our store!' }}";
       rootElement.innerHTML = `
-        <div class="banner-full-width-wrapper position-static">
+        <div class="banner-full-width-wrapper">
           <div style="background: #f7f7f7; color: #1a1a1a; padding: 20px; position: relative; border-radius: 8px;">
             <p class="m-0" style="font-size: 16px;">${defaultMessage}</p>
           </div>

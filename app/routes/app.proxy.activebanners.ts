@@ -97,7 +97,6 @@ export const loader: LoaderFunction = async ({ request }) => {
           bannerTopMargin: (banner as any).bannerTopMargin,
           bannerBottomMargin: (banner as any).bannerBottomMargin,
           bannerBorderRadius: (banner as any).bannerBorderRadius,
-          position: (banner as any).position,
           priority: (banner as any).priority,
           
           // Slides (new system) - takes precedence
@@ -169,15 +168,6 @@ export const loader: LoaderFunction = async ({ request }) => {
           actionButtonBackgroundColor: (banner as any).actionButtonBackgroundColor,
           actionButtonBorderRadius: (banner as any).actionButtonBorderRadius,
           actionButtonPadding: (banner as any).actionButtonPadding,
-          
-          // Responsive Design - ONLY admin values
-          responsiveDetails: (banner as any).responsiveDetails,
-          responsiveFonts: (banner as any).responsiveFonts,
-          
-          // Close Icon - ONLY admin values
-          closeIconColor: (banner as any).closeIconColor,
-          closeIconPosition: (banner as any).closeIconPosition,
-          closeIconSize: (banner as any).closeIconSize,
           
           // Background - ONLY admin values
           bgColor: (banner as any).bgColor,
