@@ -682,7 +682,7 @@ export default function CreateBottomBannerPage() {
                                            <option value="">Choose a variant</option>
                                            {variants.map((variant: { id: string; title: string; price: string; sku: string | null }) => (
                                              <option key={variant.id} value={variant.id}>
-                                               {variant.title}
+                                               {variant.title} - ${variant.price}
                                              </option>
                                            ))}
                                          </select>
