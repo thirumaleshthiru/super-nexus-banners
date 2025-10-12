@@ -85,7 +85,7 @@ messageColor                String            @default("#1a1a1a")
   productTitle                String?
   productImage                String?
   productFontSize             String            @default("14")
-  actionType                  String            @default("view_product")
+  actionType                  String            @default("view_product") // view_product, add_to_cart, buy_now
   actionButtonText            String?
   actionButtonTextColor       String            @default("#ffffff")
   actionButtonBackgroundColor String            @default("#1a1a1a")
@@ -183,7 +183,7 @@ model BottomBanner {
   priceOverride               String?
   couponCode                  String?
   productFontSize             String            @default("14")
-  actionType                  String            @default("view_product")
+  actionType                  String            @default("view_product") // view_product, add_to_cart, buy_now
   actionButtonText            String?
   actionButtonTextColor       String            @default("#ffffff")
   actionButtonBackgroundColor String            @default("#1a1a1a")
@@ -227,7 +227,7 @@ model BottomBannerSlide {
   priceOverride               String?
   couponCode                  String?
   productVariantId            String?
-  actionType                  String   @default("view_product")
+  actionType                  String   @default("view_product") // view_product, add_to_cart, buy_now
   actionButtonText            String?
   showAddToCartButton         Boolean  @default(false)
   showViewProductButton       Boolean  @default(false)
@@ -256,6 +256,89 @@ model BottomBannerAnalytics {
   bottomBanner BottomBanner @relation(fields: [bottomBannerId], references: [id], onDelete: Cascade)
 
   @@index([bottomBannerId, eventType])
+  @@index([timestamp])
+  @@index([shopDomain])
+}
+
+model StaticBanner {
+  id                          String            @id @default(cuid())
+  isActive                    Boolean           @default(false)
+  bannerWidth                 String            @default("full")
+  customWidth                 String?
+  bannerHeight                String            @default("auto")
+  customHeight                String?
+  bannerPadding               String            @default("12")
+  bannerLeftMargin            String            @default("0")
+  bannerRightMargin           String            @default("0")
+  bannerTopMargin             String            @default("0")
+  bannerBottomMargin          String            @default("0")
+  bannerBorderRadius          String            @default("8")
+  priority                    Int               @default(0)
+  areMessagesCarousel         Boolean           @default(false)
+  messages                    String
+  messageFontSize             String            @default("16")
+  messagePosition             String            @default("left")
+  messageColor                String            @default("#1a1a1a")
+  messagePadding              String            @default("8")
+  isTimer                     Boolean           @default(false)
+  startTime                   DateTime?
+  endTime                     DateTime?
+  timerBackgroundColor        String            @default("rgba(0,0,0,0.1)")
+  timerBorderColor            String            @default("rgba(0,0,0,0.15)")
+  timerPadding                String            @default("6")
+  timerTextColor              String            @default("#1a1a1a")
+  timerFontSize               String            @default("14")
+  hasCoupon                   Boolean           @default(false)
+  couponCode                  String?
+  couponBackgroundColor       String            @default("#fef3c7")
+  couponBorderColor           String            @default("#f59e0b")
+  couponTextColor             String            @default("#92400e")
+  couponFontSize              String            @default("14")
+  couponPadding               String            @default("8")
+  bgColor                     String            @default("#f7f7f7")
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @updatedAt
+  analytics                   StaticBannerAnalytics[]
+  slides                      StaticBannerSlide[]
+}
+
+model StaticBannerSlide {
+  id                          String   @id @default(cuid())
+  staticBannerId              String
+  order                       Int      @default(0)
+
+  // Per-slide content
+  message                     String
+
+  // Per-slide timer
+  isTimer                     Boolean  @default(false)
+  startTime                   DateTime?
+  endTime                     DateTime?
+
+  // Per-slide coupon
+  hasCoupon                   Boolean  @default(false)
+  couponCode                  String?
+
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  // Relations
+  staticBanner                StaticBanner @relation(fields: [staticBannerId], references: [id], onDelete: Cascade)
+
+  @@index([staticBannerId, order])
+}
+
+model StaticBannerAnalytics {
+  id           String   @id @default(cuid())
+  staticBannerId String
+  eventType    String
+  timestamp    DateTime @default(now())
+  sessionId    String?
+  shopDomain   String
+  messageIndex Int?
+  staticBanner StaticBanner @relation(fields: [staticBannerId], references: [id], onDelete: Cascade)
+
+  @@index([staticBannerId, eventType])
   @@index([timestamp])
   @@index([shopDomain])
 }

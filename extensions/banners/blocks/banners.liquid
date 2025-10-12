@@ -332,6 +332,35 @@
           this.loading = false;
         }
       },
+
+      async handleBuyNow(slide) {
+        if (this.loading) return;
+        
+        const variantId = slide.productVariantId || this.banner.productVariantId;
+        if (!variantId) {
+          alert('Product variant not available. Please select a variant.');
+          return;
+        }
+
+        this.loading = true;
+        
+        try {
+          await addToCart(variantId);
+          await trackEvent(this.banner.id, 'buy_now', slide.productId || this.banner.productId);
+          
+          // Redirect to checkout after adding to cart
+          window.location.href = '/checkout';
+        } catch (error) {
+          // Show specific error message
+          if (error.message.includes('sold out')) {
+            alert('This product is currently sold out. Please try another product.');
+          } else {
+            alert('Failed to proceed to checkout. Please try again.');
+          }
+        } finally {
+          this.loading = false;
+        }
+      },
       
       handleViewProduct(slide) {
         const handle = slide.productHandle || this.banner.productHandle;
@@ -464,8 +493,20 @@
                                 class="px-4 py-2 rounded font-medium whitespace-nowrap banner-transition"
                                 :style="'background: ' + (slide.actionButtonBackgroundColor || banner.actionButtonBackgroundColor) + '; color: ' + (slide.actionButtonTextColor || banner.actionButtonTextColor) + '; border-radius: ' + (slide.actionButtonBorderRadius || banner.actionButtonBorderRadius) + 'px; padding: ' + (banner.actionButtonPadding) + 'px; font-size: ' + (banner.productFontSize) + 'px'"
                               >
-                                <span x-show="!loading" x-text="slide.actionButtonText"></span>
+                                <span x-show="!loading" x-text="slide.actionButtonText || 'Add to Cart'"></span>
                                 <span x-show="loading">Adding...</span>
+                              </button>
+                            </template>
+                            
+                            <template x-if="slide.actionType === 'buy_now'">
+                              <button
+                                @click="handleBuyNow(slide)"
+                                :disabled="loading"
+                                class="px-4 py-2 rounded font-medium whitespace-nowrap banner-transition"
+                                :style="'background: ' + (slide.actionButtonBackgroundColor || banner.actionButtonBackgroundColor) + '; color: ' + (slide.actionButtonTextColor || banner.actionButtonTextColor) + '; border-radius: ' + (slide.actionButtonBorderRadius || banner.actionButtonBorderRadius) + 'px; padding: ' + (banner.actionButtonPadding) + 'px; font-size: ' + (banner.productFontSize) + 'px'"
+                              >
+                                <span x-show="!loading" x-text="slide.actionButtonText || 'Buy Now'"></span>
+                                <span x-show="loading">Processing...</span>
                               </button>
                             </template>
                             

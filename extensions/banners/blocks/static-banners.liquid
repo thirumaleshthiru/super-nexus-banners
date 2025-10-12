@@ -1,0 +1,653 @@
+{% comment %}
+  Professional Static Banner System v1.0
+  Static positioning - can be placed anywhere in theme
+  Responsive design with column layout on mobile
+{% endcomment %}
+
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  /* Override any theme styles that might interfere */
+  .static-banner-wrapper {
+    position: relative !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+  }
+  
+  .static-banner-wrapper .static-banner-container {
+    position: relative !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .static-banner-wrapper {
+    position: relative !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    pointer-events: auto !important;
+  }
+  
+  [x-cloak] { display: none !important; }
+  
+  .static-banner-container * {
+    font-family: inherit !important;
+  }
+  
+  /* Smooth horizontal slide animation */
+  .static-banner-slides-wrapper {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+  }
+  
+  .static-banner-slides-container {
+    display: flex;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+  
+  .static-banner-slide {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+  
+  .static-banner-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .timer-segment {
+    min-width: 2.5rem;
+    text-align: center;
+  }
+  
+  .static-banner-inner-container {
+    position: relative;
+  }
+  
+  /* Column Layout - Mobile First */
+  .static-banner-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 16px;
+  }
+  
+  .banner-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .banner-message {
+    width: 100%;
+    text-align: left;
+  }
+  
+  .coupon-section {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  
+  .coupon-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .coupon-label {
+    font-weight: 600;
+  }
+  
+  .coupon-code {
+    font-family: monospace;
+    font-weight: 700;
+  }
+  
+  .timer-section {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  
+  .timer-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .timer-text {
+    font-weight: 600;
+    font-family: monospace;
+  }
+  
+  .simple-message {
+    text-align: left;
+    width: 100%;
+  }
+  
+  .simple-message p {
+    margin: 0;
+  }
+  
+  /* Desktop Layout - Horizontal */
+  @media (min-width: 769px) {
+    .static-banner-content {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    
+    .banner-item {
+      flex: 1;
+      justify-content: center;
+      min-width: 0;
+    }
+    
+    .banner-message {
+      flex: 1.5;
+      text-align: center;
+    }
+    
+    .coupon-section {
+      flex: 0.8;
+      justify-content: center;
+    }
+    
+    .timer-section {
+      flex: 0.8;
+      justify-content: center;
+    }
+    
+    .simple-message {
+      text-align: center;
+    }
+  }
+  
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .static-banner-content {
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+    }
+    
+    .banner-item {
+      flex-direction: column;
+      text-align: left;
+      gap: 8px;
+    }
+    
+    .coupon-badge {
+      padding: 8px 16px;
+    }
+    
+    .timer-container {
+      padding: 8px 16px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .static-banner-content {
+      padding: 12px;
+    }
+    
+    .banner-message {
+      font-size: 14px;
+    }
+    
+    .coupon-badge {
+      padding: 6px 12px;
+    }
+    
+    .timer-container {
+      padding: 6px 12px;
+    }
+  }
+</style>
+
+<div id="static-banner-root"></div>
+
+<script>
+(function() {
+  'use strict';
+  
+  const STATIC_BANNER_API = '/apps/banners-1/activestaticbanners';
+  const ANALYTICS_API = '/apps/banners/analytics';
+  const FETCH_TIMEOUT = 5000;
+  
+  async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...options.headers
+        }
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
+  }
+  
+  function generateSessionId() {
+    try {
+      return btoa(navigator.userAgent + Date.now()).slice(0, 16);
+    } catch {
+      return 'anonymous-' + Date.now();
+    }
+  }
+  
+  function getShopDomain() {
+    return window.Shopify?.shop || window.location.host;
+  }
+  
+  async function trackEvent(staticBannerId, eventType) {
+    try {
+      await fetchWithTimeout(ANALYTICS_API, {
+        method: 'POST',
+        body: JSON.stringify({
+          staticBannerId,
+          eventType,
+          sessionId: generateSessionId(),
+          shopDomain: getShopDomain()
+        })
+      });
+    } catch (error) {
+      // Analytics tracking failed silently
+    }
+  }
+  
+  function calculateTimeRemaining(endTime) {
+    const now = new Date();
+    const end = new Date(endTime);
+    const distance = end - now;
+    
+    if (distance <= 0) {
+      return { expired: true, days: 0, hours: 0, minutes: 0, seconds: 0 };
+    }
+    
+    return {
+      expired: false,
+      days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+      minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+      seconds: Math.floor((distance % (1000 * 60)) / 1000)
+    };
+  }
+  
+  function formatTimer(time) {
+    const parts = [];
+    if (time.days > 0) parts.push(`${time.days}d`);
+    if (time.hours > 0) parts.push(`${time.hours}h`);
+    if (time.minutes > 0) parts.push(`${time.minutes}m`);
+    parts.push(`${time.seconds}s`);
+    return parts.join(' ');
+  }
+  
+  function staticBannerComponent(staticBannerData) {
+    return {
+      staticBanner: staticBannerData,
+      currentSlideIndex: 0,
+      timers: {},
+      closed: false,
+      
+      init() {
+        console.log('Initializing static banner component:', this.staticBanner);
+        trackEvent(this.staticBanner.id, 'view');
+        
+        if (this.staticBanner.hasSlides && this.staticBanner.slides && this.staticBanner.slides.length > 0) {
+          console.log('Setting up slides:', this.staticBanner.slides);
+          this.staticBanner.slides.forEach((slide, index) => {
+            if (slide.isTimer && slide.endTime) {
+              this.initTimer(index, slide.endTime);
+            }
+          });
+        } else if (this.staticBanner.isTimer && this.staticBanner.endTime) {
+          this.initTimer('main', this.staticBanner.endTime);
+        }
+        
+        if (this.staticBanner.hasSlides && this.staticBanner.slides && this.staticBanner.slides.length > 1) {
+          console.log('Setting up carousel with', this.staticBanner.slides.length, 'slides');
+          this.setupCarousel();
+        }
+      },
+      
+      destroy() {
+        Object.values(this.timers).forEach(timer => {
+          if (timer.interval) clearInterval(timer.interval);
+        });
+      },
+      
+      initTimer(key, endTime) {
+        const updateTimer = () => {
+          const time = calculateTimeRemaining(endTime);
+          this.timers[key] = { ...time, formatted: formatTimer(time) };
+          
+          if (time.expired) {
+            if (this.timers[key].interval) {
+              clearInterval(this.timers[key].interval);
+            }
+            this.closed = true;
+          }
+        };
+        
+        updateTimer();
+        this.timers[key] = {
+          ...this.timers[key],
+          interval: setInterval(updateTimer, 1000)
+        };
+      },
+      
+      setupCarousel() {
+        console.log('Setting up carousel interval');
+        setInterval(() => {
+          if (!this.closed) {
+            console.log('Auto-advancing slide from', this.currentSlideIndex, 'to', (this.currentSlideIndex + 1) % this.staticBanner.slides.length);
+            this.nextSlide();
+          }
+        }, 5000);
+      },
+
+      nextSlide() {
+        const oldIndex = this.currentSlideIndex;
+        this.currentSlideIndex = (this.currentSlideIndex + 1) % this.staticBanner.slides.length;
+        console.log('Slide changed from', oldIndex, 'to', this.currentSlideIndex);
+      },
+      
+      prevSlide() {
+        this.currentSlideIndex = this.currentSlideIndex === 0 
+          ? this.staticBanner.slides.length - 1 
+          : this.currentSlideIndex - 1;
+      },
+      
+      getCurrentSlide() {
+        if (this.staticBanner.hasSlides && this.staticBanner.slides.length > 0) {
+          return this.staticBanner.slides[this.currentSlideIndex];
+        }
+        return this.staticBanner;
+      },
+      
+      copyCouponCode(code) {
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(code).then(() => {
+            this.showCopiedFeedback();
+          }).catch(() => {
+            this.fallbackCopyTextToClipboard(code);
+          });
+        } else {
+          this.fallbackCopyTextToClipboard(code);
+        }
+      },
+      
+      fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          this.showCopiedFeedback();
+        } catch (err) {
+          console.error('Fallback: Oops, unable to copy', err);
+        }
+        document.body.removeChild(textArea);
+      },
+      
+      showCopiedFeedback() {
+        // Clear any existing timeout
+        if (this._copyTimeout) {
+          clearTimeout(this._copyTimeout);
+        }
+        
+        // First, restore any badges that might be stuck
+        this.restoreCouponBadges();
+        
+        // Find all coupon badges and temporarily change their content
+        const couponBadges = document.querySelectorAll('.coupon-badge');
+        couponBadges.forEach(badge => {
+          const originalHTML = badge.innerHTML;
+          badge.innerHTML = '<span style="color: #059669; font-weight: 700;">✓ Copied!</span>';
+          
+          // Store original HTML on the badge for restoration
+          badge._originalHTML = originalHTML;
+        });
+        
+        // Set a single timeout to restore all badges
+        this._copyTimeout = setTimeout(() => {
+          this.restoreCouponBadges();
+          this._copyTimeout = null;
+        }, 1500);
+      },
+      
+      restoreCouponBadges() {
+        const couponBadges = document.querySelectorAll('.coupon-badge');
+        couponBadges.forEach(badge => {
+          if (badge._originalHTML) {
+            badge.innerHTML = badge._originalHTML;
+            delete badge._originalHTML;
+          }
+        });
+      },
+      
+      getContainerStyle() {
+        const styles = [];
+        
+        if (this.staticBanner.bgColor) {
+          styles.push(`background-color: ${this.staticBanner.bgColor}`);
+        }
+        
+        if (this.staticBanner.messageColor) {
+          styles.push(`color: ${this.staticBanner.messageColor}`);
+        }
+        
+        if (this.staticBanner.bannerBorderRadius !== null && this.staticBanner.bannerBorderRadius !== undefined) {
+          styles.push(`border-radius: ${this.staticBanner.bannerBorderRadius}px`);
+        }
+        
+        if (this.staticBanner.bannerPadding !== null && this.staticBanner.bannerPadding !== undefined) {
+          styles.push(`padding: ${this.staticBanner.bannerPadding}px`);
+        }
+        
+        if (this.staticBanner.bannerTopMargin !== null && this.staticBanner.bannerTopMargin !== undefined) {
+          styles.push(`margin-top: ${this.staticBanner.bannerTopMargin}px`);
+        }
+        if (this.staticBanner.bannerBottomMargin !== null && this.staticBanner.bannerBottomMargin !== undefined) {
+          styles.push(`margin-bottom: ${this.staticBanner.bannerBottomMargin}px`);
+        }
+        if (this.staticBanner.bannerLeftMargin !== null && this.staticBanner.bannerLeftMargin !== undefined) {
+          styles.push(`margin-left: ${this.staticBanner.bannerLeftMargin}px`);
+        }
+        if (this.staticBanner.bannerRightMargin !== null && this.staticBanner.bannerRightMargin !== undefined) {
+          styles.push(`margin-right: ${this.staticBanner.bannerRightMargin}px`);
+        }
+        
+        if (this.staticBanner.customHeight && this.staticBanner.bannerHeight !== 'auto') {
+          styles.push(`height: ${this.staticBanner.customHeight}px`);
+        }
+        
+        if (this.staticBanner.bannerWidth === 'custom' && this.staticBanner.customWidth) {
+          styles.push(`width: ${this.staticBanner.customWidth}%`);
+          styles.push(`margin-left: auto`);
+          styles.push(`margin-right: auto`);
+        }
+        
+        return styles.join('; ');
+      },
+      
+      getSlideTransform() {
+        return `translateX(-${this.currentSlideIndex * 100}%)`;
+      }
+    };
+  }
+  
+  function renderStaticBanner(staticBanner) {
+    return `
+      <div class="static-banner-wrapper">
+        <div 
+          x-data="staticBannerComponent(${JSON.stringify(staticBanner).replace(/"/g, '&quot;')})"
+          x-show="!closed"
+          x-cloak
+          class="static-banner-container"
+        >
+          <div 
+            :style="getContainerStyle()"
+            class="static-banner-transition static-banner-inner-container"
+          >
+            <div class="static-banner-slides-wrapper">
+              <div class="static-banner-slides-container" :style="'transform: ' + getSlideTransform()">
+                
+                <template x-if="staticBanner.hasSlides && staticBanner.slides && staticBanner.slides.length > 0">
+                  <template x-for="(slide, index) in staticBanner.slides" :key="index">
+                    <div class="static-banner-slide">
+                      <div class="static-banner-content">
+                        
+                        <!-- Message -->
+                        <template x-if="slide.message">
+                          <div 
+                            class="banner-item banner-message" 
+                            x-text="slide.message"
+                            :style="'font-size: ' + (staticBanner.messageFontSize) + 'px; color: ' + (staticBanner.messageColor) + '; padding: ' + (staticBanner.messagePadding) + 'px; font-weight: 500; line-height: 1.4'"
+                          ></div>
+                        </template>
+                        
+                        <!-- Coupon Code -->
+                        <template x-if="slide.hasCoupon && slide.couponCode">
+                          <div class="banner-item coupon-section">
+                            <div 
+                              class="coupon-badge"
+                              :style="'background: ' + (staticBanner.couponBackgroundColor) + '; border: 1px solid ' + (staticBanner.couponBorderColor) + '; border-radius: ' + (staticBanner.bannerBorderRadius / 2) + 'px; padding: ' + (staticBanner.couponPadding) + 'px; font-size: ' + (staticBanner.couponFontSize) + 'px; position: relative; cursor: pointer;'"
+                              @click="copyCouponCode(slide.couponCode)"
+                            >
+                              <div class="coupon-dots" :style="'position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border: 2px dotted ' + (staticBanner.couponBorderColor) + '; border-radius: inherit; pointer-events: none;'"></div>
+                              <span class="coupon-label" :style="'color: ' + (staticBanner.couponTextColor) + ';'">Code:</span>
+                              <span class="coupon-code" x-text="slide.couponCode" :style="'color: ' + (staticBanner.couponTextColor) + '; font-family: monospace; font-weight: 700;'"></span>
+                            </div>
+                          </div>
+                        </template>
+                        
+                        <!-- Timer -->
+                        <template x-if="slide.isTimer && slide.endTime">
+                          <div class="banner-item timer-section">
+                            <div 
+                              class="timer-container"
+                              :style="'background: ' + (staticBanner.timerBackgroundColor) + '; border: 1px solid ' + (staticBanner.timerBorderColor) + '; color: ' + (staticBanner.timerTextColor) + '; font-size: ' + (staticBanner.timerFontSize) + 'px; padding: ' + (staticBanner.timerPadding) + 'px'"
+                            >
+                              <div class="timer-text" x-text="timers[index]?.formatted || 'Loading...'"></div>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </template>
+                
+                <template x-if="!staticBanner.hasSlides || staticBanner.slides.length === 0">
+                  <div class="static-banner-slide">
+                    <div class="static-banner-content">
+                      <div class="simple-message">
+                        <p x-text="staticBanner.messages && staticBanner.messages[0] ? staticBanner.messages[0] : ''"></p>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  async function init() {
+    const rootElement = document.getElementById('static-banner-root');
+    console.log('Static banner init - rootElement:', rootElement);
+    if (!rootElement) {
+      console.log('No root element found');
+      return;
+    }
+    
+    try {
+      console.log('Fetching from:', STATIC_BANNER_API);
+      const response = await fetchWithTimeout(STATIC_BANNER_API);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch static banners: ' + response.status);
+      }
+
+      const data = await response.json();
+      const staticBanners = data.staticBanners || [];
+      
+      console.log('Static banners data:', data);
+      console.log('Static banners array:', staticBanners);
+      
+      if (staticBanners.length === 0) {
+        console.log('No static banners found');
+        return; // Don't show anything if no static banners
+      }
+      
+      staticBanners.sort((a, b) => (a.priority || 0) - (b.priority || 0));
+      
+      const staticBannersHTML = staticBanners.map(renderStaticBanner).join('');
+      console.log('Generated HTML:', staticBannersHTML);
+      
+      // Render directly into the root element where the block is placed
+      rootElement.innerHTML = staticBannersHTML;
+      console.log('HTML inserted into root element');
+      
+    } catch (error) {
+      // Static banner initialization error - fail silently
+      console.log('Static banner initialization failed:', error);
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+  window.staticBannerComponent = staticBannerComponent;
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Static Banner System",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "default_message",
+      "label": "Default Message",
+      "default": "Welcome to our store!",
+      "info": "Displayed when no active static banners are available"
+    }
+  ]
+}
+{% endschema %}

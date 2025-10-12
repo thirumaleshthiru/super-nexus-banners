@@ -130,7 +130,7 @@ export const loader: LoaderFunction = async ({ request }) => {
               productCurrencyCode: slide.product?.currencyCode || "USD",
               productVariantId: slide.productVariantId,
               actionType: slide.actionType || "view_product",
-              actionButtonText: slide.actionButtonText || "View Product",
+              actionButtonText: slide.actionButtonText || (slide.actionType === "buy_now" ? "Buy Now" : slide.actionType === "add_to_cart" ? "Add to Cart" : "View Product"),
             };
           })),
           
@@ -163,7 +163,7 @@ export const loader: LoaderFunction = async ({ request }) => {
           productCurrencyCode: (banner as any).product?.currencyCode,
           productVariantId: (banner as any).product?.variantId,
           actionType: (banner as any).actionType,
-          actionButtonText: (banner as any).actionButtonText,
+          actionButtonText: (banner as any).actionButtonText || ((banner as any).actionType === "buy_now" ? "Buy Now" : (banner as any).actionType === "add_to_cart" ? "Add to Cart" : "View Product"),
           actionButtonTextColor: (banner as any).actionButtonTextColor,
           actionButtonBackgroundColor: (banner as any).actionButtonBackgroundColor,
           actionButtonBorderRadius: (banner as any).actionButtonBorderRadius,

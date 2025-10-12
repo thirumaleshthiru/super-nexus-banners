@@ -47,6 +47,8 @@ interface BottomBannerSlide {
   productId: string
   productTitle: string
   productVariantId: string
+  actionType: string
+  actionButtonText: string
   showImage: boolean
   priceOverride: string
   couponCode: string
@@ -264,8 +266,8 @@ export async function action({ request }: ActionFunctionArgs) {
         priceOverride: slide.hasProduct ? slide.priceOverride : null,
         couponCode: slide.hasProduct ? slide.couponCode : null,
         productVariantId: numericVariantId,
-        actionType: slide.hasProduct ? "view_product" : "view_product",
-        actionButtonText: slide.hasProduct ? slide.viewProductButtonText : null,
+        actionType: slide.hasProduct ? slide.actionType : "view_product",
+        actionButtonText: slide.hasProduct ? slide.actionButtonText : null,
         showAddToCartButton: slide.showAddToCartButton,
         showViewProductButton: slide.showViewProductButton,
         addToCartButtonText: slide.addToCartButtonText,
@@ -384,6 +386,8 @@ export default function CreateBottomBannerPage() {
     productId: products.length > 0 ? products[0].id : "",
     productTitle: products.length > 0 ? products[0].title : "",
     productVariantId: products.length > 0 && products[0].variants.length > 0 ? products[0].variants[0].id : "",
+    actionType: "view_product",
+    actionButtonText: "View Product",
     showImage: true,
     priceOverride: products.length > 0 ? `$${(parseFloat(products[0].price) * 0.8).toFixed(2)}` : "$99.99", // 20% discount
     couponCode: "SAVE20",
@@ -763,6 +767,29 @@ export default function CreateBottomBannerPage() {
                                       label="View Product Button Text"
                                       value={slide.viewProductButtonText}
                                       onChange={(value) => updateSlide(index, "viewProductButtonText", value)}
+                                      autoComplete="off"
+                                    />
+                                  )}
+
+                                  <Checkbox 
+                                    label="Show Buy Now Button" 
+                                    checked={slide.actionType === "buy_now"} 
+                                    onChange={(value) => {
+                                      const newSlides = [...slides];
+                                      newSlides[index] = {
+                                        ...newSlides[index],
+                                        actionType: value ? "buy_now" : "view_product",
+                                        actionButtonText: value ? "Buy Now" : "View Product"
+                                      };
+                                      setSlides(newSlides);
+                                    }}
+                                  />
+
+                                  {slide.actionType === "buy_now" && (
+                                    <TextField
+                                      label="Buy Now Button Text"
+                                      value={slide.actionButtonText}
+                                      onChange={(value) => updateSlide(index, "actionButtonText", value)}
                                       autoComplete="off"
                                     />
                                   )}

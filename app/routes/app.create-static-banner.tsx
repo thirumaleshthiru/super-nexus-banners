@@ -16,39 +16,18 @@ import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node"
 import { json, redirect } from "@remix-run/node"
 import { Form, useLoaderData, useNavigation } from "@remix-run/react"
 import { useState, useEffect, useRef } from "react"
-import prisma from "app/db.server"
 import { Link } from "@remix-run/react"
 import { authenticate } from "../shopify.server"
+import prisma from "app/db.server"
 
 // ---- Types ----
-interface Product {
-  id: string
-  shopifyId: string
-  title: string
-  handle: string
-  featuredImage: string | null
-  price: string
-  currencyCode: string
-  variantId: string | null
-  variants?: Array<{
-    id: string
-    title: string
-    price: string
-    sku: string | null
-  }>
-}
-
-interface Slide {
+interface StaticBannerSlide {
   message: string
   isTimer: boolean
   startTime: string
   endTime: string
-  hasProduct: boolean
-  productId: string
-  productTitle: string
-  productVariantId: string
-  actionType: string
-  actionButtonText: string
+  hasCoupon: boolean
+  couponCode: string
 }
 
 // ---- Loader ----
@@ -58,22 +37,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return auth;
   }
   
-  try {
-    const products = await (prisma as any).product.findMany({
-      orderBy: { title: "asc" },
-    })
-
-    // Parse variants for each product
-    const productsWithVariants = products.map((product: any) => ({
-      ...product,
-      variants: product.variants ? JSON.parse(product.variants) : []
-    }))
-
-    return json({ products: productsWithVariants })
-  } catch (error) {
-    console.error("Loader error:", error)
-    return json({ products: [] })
-  }
+  return json({})
 }
 
 // ---- Action ----
@@ -89,67 +53,55 @@ export async function action({ request }: ActionFunctionArgs) {
   if (intent === "create") {
     // Parse slides from form data
     const slidesJson = String(formData.get("slides") || "[]")
-    const slides = JSON.parse(slidesJson) as Slide[]
-    
-     // Validate slides with products have variants selected
-     for (let i = 0; i < slides.length; i++) {
-       const slide = slides[i]
-       if (slide.hasProduct && slide.productId && !slide.productVariantId) {
-         // Slide has product but no variant selected - this will be handled by frontend validation
-       }
-     }
+    const slides = JSON.parse(slidesJson) as StaticBannerSlide[]
 
     // Banner Layout & Positioning
     const bannerWidth = String(formData.get("bannerWidth") || "full")
     const customWidth = String(formData.get("customWidth") || "")
     const bannerHeight = String(formData.get("bannerHeight") || "auto")
     const customHeight = String(formData.get("customHeight") || "")
-    const bannerPadding = String(formData.get("bannerPadding") || "20")
+    const bannerPadding = String(formData.get("bannerPadding") || "10")
     const bannerLeftMargin = String(formData.get("bannerLeftMargin") || "0")
     const bannerRightMargin = String(formData.get("bannerRightMargin") || "0")
     const bannerTopMargin = String(formData.get("bannerTopMargin") || "0")
     const bannerBottomMargin = String(formData.get("bannerBottomMargin") || "0")
-    const bannerBorderRadius = String(formData.get("bannerBorderRadius") || "8")
+    const bannerBorderRadius = String(formData.get("bannerBorderRadius") || "12")
     const priority = Number.parseInt(String(formData.get("priority") || "0"))
 
-    // Message Carousel System (legacy, keep for backward compatibility)
+    // Message Carousel System
     const areMessagesCarousel = slides.length > 1
     const messages = JSON.stringify(slides.map(s => s.message))
-    const messageFontSize = String(formData.get("messageFontSize") || "16")
+    const messageFontSize = String(formData.get("messageFontSize") || "14")
     const messagePosition = String(formData.get("messagePosition") || "left")
-    const messageColor = String(formData.get("messageColor") || "#ffffff")
-    const messagePadding = String(formData.get("messagePadding") || "8")
+    const messageColor = "#" + String(formData.get("messageColor") || "2d3748")
+    const messagePadding = String(formData.get("messagePadding") || "0")
 
-    // Timer System (legacy from first slide)
+    // Timer System (from first slide)
     const isTimer = slides.length > 0 && slides[0].isTimer
     const startTime = isTimer && slides[0].startTime ? new Date(slides[0].startTime) : null
     const endTime = isTimer && slides[0].endTime ? new Date(slides[0].endTime) : null
-    const timerBackgroundColor = String(formData.get("timerBackgroundColor") || "rgba(255,255,255,0.2)")
-    const timerBorderColor = String(formData.get("timerBorderColor") || "rgba(255,255,255,0.3)")
-    const timerPadding = String(formData.get("timerPadding") || "6")
-    const timerTextColor = String(formData.get("timerTextColor") || "#ffffff")
-    const timerFontSize = String(formData.get("timerFontSize") || "14")
+    const timerBackgroundColor = "#" + String(formData.get("timerBackgroundColor") || "f7fafc")
+    const timerBorderColor = "#" + String(formData.get("timerBorderColor") || "e2e8f0")
+    const timerPadding = String(formData.get("timerPadding") || "3")
+    const timerTextColor = "#" + String(formData.get("timerTextColor") || "2d3748")
+    const timerFontSize = String(formData.get("timerFontSize") || "12")
 
-    // Product Integration (legacy from first slide)
-    const hasProduct = slides.length > 0 && slides[0].hasProduct
-    const productId = slides.length > 0 && slides[0].productId ? slides[0].productId : null
-    const manualProductTitle = slides.length > 0 ? slides[0].productTitle : ""
-    const productImage = String(formData.get("productImage") || "")
-    const productFontSize = String(formData.get("productFontSize") || "14")
-    const actionType = slides.length > 0 ? slides[0].actionType : "view_product"
-    const actionButtonText = slides.length > 0 ? slides[0].actionButtonText : "View Product"
-    const actionButtonTextColor = String(formData.get("actionButtonTextColor") || "#ffffff")
-    const actionButtonBackgroundColor = String(formData.get("actionButtonBackgroundColor") || "#007cba")
-    const actionButtonBorderRadius = String(formData.get("actionButtonBorderRadius") || "4")
-    const actionButtonPadding = String(formData.get("actionButtonPadding") || "8")
+    // Coupon System (from first slide)
+    const hasCoupon = slides.length > 0 && slides[0].hasCoupon
+    const couponCode = slides.length > 0 ? slides[0].couponCode : ""
+    const couponBackgroundColor = "#" + String(formData.get("couponBackgroundColor") || "fef3c7")
+    const couponBorderColor = "#" + String(formData.get("couponBorderColor") || "f59e0b")
+    const couponTextColor = "#" + String(formData.get("couponTextColor") || "92400e")
+    const couponFontSize = String(formData.get("couponFontSize") || "12")
+    const couponPadding = String(formData.get("couponPadding") || "3")
 
     // Background
-    const bgColor = String(formData.get("bgColor") || "#ff0000")
+    const bgColor = "#" + String(formData.get("bgColor") || "ffffff")
 
     const isActive = formData.get("isActive") === "true"
 
-    // Create banner with slides
-    const banner = await (prisma as any).banner.create({
+    // Create static banner with slides
+    const staticBanner = await (prisma as any).staticBanner.create({
       data: {
         isActive,
         bannerWidth,
@@ -177,17 +129,13 @@ export async function action({ request }: ActionFunctionArgs) {
         timerPadding,
         timerTextColor,
         timerFontSize,
-        hasProduct,
-        productId: hasProduct && productId ? productId : null,
-        productTitle: hasProduct && manualProductTitle ? manualProductTitle : null,
-        productImage: hasProduct && productImage ? productImage : null,
-        productFontSize,
-        actionType,
-        actionButtonText: hasProduct ? actionButtonText : null,
-        actionButtonTextColor,
-        actionButtonBackgroundColor,
-        actionButtonBorderRadius,
-        actionButtonPadding,
+        hasCoupon,
+        couponCode: hasCoupon && couponCode ? couponCode : null,
+        couponBackgroundColor,
+        couponBorderColor,
+        couponTextColor,
+        couponFontSize,
+        couponPadding,
         bgColor,
       },
     })
@@ -196,53 +144,58 @@ export async function action({ request }: ActionFunctionArgs) {
     for (let i = 0; i < slides.length; i++) {
       const slide = slides[i]
       
-      // Use the productId directly since it's already the internal database ID
-      let internalProductId = null;
-      let numericVariantId = null;
-      
-      if (slide.hasProduct && slide.productId) {
-        // ProductId is already the internal database ID
-        internalProductId = slide.productId;
-        
-        // Variant ID should already be numeric from frontend
-        if (slide.productVariantId) {
-          numericVariantId = slide.productVariantId;
-        }
-      }
-      
       const slideData = {
-        bannerId: banner.id,
+        staticBannerId: staticBanner.id,
         order: i,
         message: slide.message,
         isTimer: slide.isTimer,
         startTime: slide.isTimer && slide.startTime ? new Date(slide.startTime) : null,
         endTime: slide.isTimer && slide.endTime ? new Date(slide.endTime) : null,
-        hasProduct: slide.hasProduct,
-        productId: internalProductId,
-        productTitle: slide.hasProduct ? slide.productTitle : null,
-        productVariantId: numericVariantId,
-        actionType: slide.hasProduct ? slide.actionType : "view_product",
-        actionButtonText: slide.hasProduct ? slide.actionButtonText : null,
+        hasCoupon: slide.hasCoupon,
+        couponCode: slide.hasCoupon ? slide.couponCode : null,
       }
       
-      
-      await (prisma as any).bannerSlide.create({
+      await (prisma as any).staticBannerSlide.create({
         data: slideData,
       })
     }
 
-    return redirect("/app/manage-banners")
+    return redirect("/app/manage-static-banners")
   }
 
-  return redirect("/app/manage-banners")
+  return redirect("/app/manage-static-banners")
 }
 
 // ---- UI ----
-export default function CreateBannerPage() {
-  const { products } = useLoaderData<typeof loader>()
+export default function CreateStaticBannerPage() {
   const navigation = useNavigation()
   const isSubmitting = navigation.state === "submitting"
   const isRedirecting = navigation.state === "loading" && navigation.formData == null
+
+  // Professional Design System Defaults
+  const defaultSettings = {
+    messageFontSize: "14",
+    messagePosition: "left", 
+    messageColor: "2d3748", // Professional dark gray
+    messagePadding: "0",
+    timerBackgroundColor: "f7fafc", // Light gray
+    timerBorderColor: "e2e8f0", // Subtle border
+    timerPadding: "3",
+    timerTextColor: "2d3748", // Professional dark gray
+    timerFontSize: "12",
+    couponBackgroundColor: "fef3c7", // Light yellow
+    couponBorderColor: "f59e0b", // Orange border
+    couponTextColor: "92400e", // Dark brown
+        couponFontSize: "12",
+    couponPadding: "3",
+    bgColor: "ffffff", // Clean white background
+    bannerPadding: "10",
+    bannerTopMargin: "0",
+    bannerBottomMargin: "0", 
+    bannerLeftMargin: "0",
+    bannerRightMargin: "0",
+    bannerBorderRadius: "12"
+  }
 
   // Banner Layout & Positioning
   const [isActive, setIsActive] = useState(false)
@@ -250,27 +203,63 @@ export default function CreateBannerPage() {
   const [customWidth, setCustomWidth] = useState("")
   const [bannerHeight, setBannerHeight] = useState("auto")
   const [customHeight, setCustomHeight] = useState("")
-  const [bannerPadding, setBannerPadding] = useState("20")
-  const [bannerLeftMargin, setBannerLeftMargin] = useState("0")
-  const [bannerRightMargin, setBannerRightMargin] = useState("0")
-  const [bannerTopMargin, setBannerTopMargin] = useState("0")
-  const [bannerBottomMargin, setBannerBottomMargin] = useState("0")
-  const [bannerBorderRadius, setBannerBorderRadius] = useState("8")
+  const [bannerPadding, setBannerPadding] = useState(defaultSettings.bannerPadding)
+  const [bannerLeftMargin, setBannerLeftMargin] = useState(defaultSettings.bannerLeftMargin)
+  const [bannerRightMargin, setBannerRightMargin] = useState(defaultSettings.bannerRightMargin)
+  const [bannerTopMargin, setBannerTopMargin] = useState(defaultSettings.bannerTopMargin)
+  const [bannerBottomMargin, setBannerBottomMargin] = useState(defaultSettings.bannerBottomMargin)
+  const [bannerBorderRadius, setBannerBorderRadius] = useState(defaultSettings.bannerBorderRadius)
   const [priority, setPriority] = useState("0")
 
-  // Slide System - replaces message/timer/product separate systems
-  const [slides, setSlides] = useState<Slide[]>([{
-    message: "",
-    isTimer: false,
+  // Reset to defaults function
+  const resetToDefaults = () => {
+    // Reset all styling
+    setMessageFontSize(defaultSettings.messageFontSize)
+    setMessagePosition(defaultSettings.messagePosition)
+    setMessageColor(defaultSettings.messageColor)
+    setMessagePadding(defaultSettings.messagePadding)
+    setTimerBackgroundColor(defaultSettings.timerBackgroundColor)
+    setTimerBorderColor(defaultSettings.timerBorderColor)
+    setTimerPadding(defaultSettings.timerPadding)
+    setTimerTextColor(defaultSettings.timerTextColor)
+    setTimerFontSize(defaultSettings.timerFontSize)
+    setCouponBackgroundColor(defaultSettings.couponBackgroundColor)
+    setCouponBorderColor(defaultSettings.couponBorderColor)
+    setCouponTextColor(defaultSettings.couponTextColor)
+    setCouponFontSize(defaultSettings.couponFontSize)
+    setCouponPadding(defaultSettings.couponPadding)
+    setBgColor(defaultSettings.bgColor)
+    setBannerPadding(defaultSettings.bannerPadding)
+    setBannerLeftMargin(defaultSettings.bannerLeftMargin)
+    setBannerRightMargin(defaultSettings.bannerRightMargin)
+    setBannerTopMargin(defaultSettings.bannerTopMargin)
+    setBannerBottomMargin(defaultSettings.bannerBottomMargin)
+    setBannerBorderRadius(defaultSettings.bannerBorderRadius)
+    
+    // Reset banner settings
+    setIsActive(false)
+    setBannerWidth("full")
+    setCustomWidth("")
+    setBannerHeight("auto")
+    setCustomHeight("")
+    setPriority("0")
+    
+    // Reset slides to default
+    setSlides([defaultSlide])
+  }
+
+  // Default slide with prefilled professional content
+  const defaultSlide: StaticBannerSlide = {
+    message: "🎉 Special Offer! Limited Time Only",
+    isTimer: true,
     startTime: "",
-    endTime: "",
-    hasProduct: false,
-    productId: "",
-    productTitle: "",
-    productVariantId: "",
-    actionType: "view_product",
-    actionButtonText: "View Product"
-  }])
+    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 7 days from now
+    hasCoupon: true,
+    couponCode: "SAVE20"
+  }
+
+  // Slide System
+  const [slides, setSlides] = useState<StaticBannerSlide[]>([defaultSlide])
 
   // Use ref to keep track of latest slides state
   const slidesRef = useRef(slides);
@@ -280,38 +269,32 @@ export default function CreateBannerPage() {
     slidesRef.current = slides;
   }, [slides]);
 
-  // Styling (global) - Using schema defaults
-  const [messageFontSize, setMessageFontSize] = useState("16")
-  const [messagePosition, setMessagePosition] = useState("left")
-  const [messageColor, setMessageColor] = useState("#1a1a1a")
-  const [messagePadding, setMessagePadding] = useState("8")
-  const [timerBackgroundColor, setTimerBackgroundColor] = useState("rgba(0,0,0,0.1)")
-  const [timerBorderColor, setTimerBorderColor] = useState("rgba(0,0,0,0.15)")
-  const [timerPadding, setTimerPadding] = useState("6")
-  const [timerTextColor, setTimerTextColor] = useState("#1a1a1a")
-  const [timerFontSize, setTimerFontSize] = useState("14")
-  const [productFontSize, setProductFontSize] = useState("14")
-  const [actionButtonTextColor, setActionButtonTextColor] = useState("#ffffff")
-  const [actionButtonBackgroundColor, setActionButtonBackgroundColor] = useState("#1a1a1a")
-  const [actionButtonBorderRadius, setActionButtonBorderRadius] = useState("6")
-  const [actionButtonPadding, setActionButtonPadding] = useState("8")
+  // Styling (global) - Professional defaults
+  const [messageFontSize, setMessageFontSize] = useState(defaultSettings.messageFontSize)
+  const [messagePosition, setMessagePosition] = useState(defaultSettings.messagePosition)
+  const [messageColor, setMessageColor] = useState(defaultSettings.messageColor)
+  const [messagePadding, setMessagePadding] = useState(defaultSettings.messagePadding)
+  const [timerBackgroundColor, setTimerBackgroundColor] = useState(defaultSettings.timerBackgroundColor)
+  const [timerBorderColor, setTimerBorderColor] = useState(defaultSettings.timerBorderColor)
+  const [timerPadding, setTimerPadding] = useState(defaultSettings.timerPadding)
+  const [timerTextColor, setTimerTextColor] = useState(defaultSettings.timerTextColor)
+  const [timerFontSize, setTimerFontSize] = useState(defaultSettings.timerFontSize)
+  const [couponBackgroundColor, setCouponBackgroundColor] = useState(defaultSettings.couponBackgroundColor)
+  const [couponBorderColor, setCouponBorderColor] = useState(defaultSettings.couponBorderColor)
+  const [couponTextColor, setCouponTextColor] = useState(defaultSettings.couponTextColor)
+  const [couponFontSize, setCouponFontSize] = useState(defaultSettings.couponFontSize)
+  const [couponPadding, setCouponPadding] = useState(defaultSettings.couponPadding)
 
   // Background
-  const [bgColor, setBgColor] = useState("#f7f7f7")
+  const [bgColor, setBgColor] = useState(defaultSettings.bgColor)
 
   // Helper functions for slides
   const addSlide = () => {
     setSlides([...slides, {
-      message: "",
-      isTimer: false,
-      startTime: "",
-      endTime: "",
-      hasProduct: false,
-      productId: "",
-      productTitle: "",
-      productVariantId: "",
-      actionType: "view_product",
-      actionButtonText: "View Product"
+      ...defaultSlide,
+      message: "🎯 New Offer Available!",
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 7 days from now
+      couponCode: "NEW10"
     }])
   }
 
@@ -321,47 +304,36 @@ export default function CreateBannerPage() {
     }
   }
 
-  const updateSlide = (index: number, field: keyof Slide, value: any) => {
+  const updateSlide = (index: number, field: keyof StaticBannerSlide, value: any) => {
     const newSlides = [...slides]
     newSlides[index] = { ...newSlides[index], [field]: value }
     setSlides(newSlides)
   }
 
-  // Handle form submission with validation
-  const handleSubmit = (e: React.FormEvent) => {
-    // Validate that all slides with products have variants selected
-    const invalidSlides = slidesRef.current.filter(
-      (slide, idx) => slide.hasProduct && slide.productId && !slide.productVariantId
-    );
-    
-    if (invalidSlides.length > 0) {
-      e.preventDefault();
-      const slideNumbers = slidesRef.current
-        .map((slide, idx) => slide.hasProduct && slide.productId && !slide.productVariantId ? idx + 1 : null)
-        .filter(n => n !== null)
-        .join(', ');
-      
-      alert(`Please select a variant for slide(s): ${slideNumbers}`);
-      return false;
-    }
-  }
-
   return (
     <Page>
-      <TitleBar title="Create New Banner" />
+      <TitleBar title="Create New Static Banner" />
       <Layout>
         <Layout.Section>
           <Card>
             <BlockStack gap="400">
               <InlineStack align="space-between">
                 <Text as="h2" variant="headingMd">
-                  Banner Configuration
+                  Static Banner Configuration
                 </Text>
                
-                <Link to="/app/sync-products">Sync Products</Link>
+                <InlineStack gap="200">
+                  <Button 
+                    variant="secondary" 
+                    size="slim"
+                    onClick={resetToDefaults}
+                  >
+                    Reset to Defaults
+                  </Button>
+                </InlineStack>
               </InlineStack>
 
-              <Form method="post" onSubmit={handleSubmit}>
+              <Form method="post">
                 <input type="hidden" name="_intent" value="create" />
                 <input type="hidden" name="isActive" value={isActive.toString()} />
                 
@@ -381,10 +353,10 @@ export default function CreateBannerPage() {
                         Basic Settings
                       </Text>
                       <Checkbox 
-                        label="Activate Banner" 
+                        label="Activate Static Banner" 
                         checked={isActive} 
                         onChange={setIsActive}
-                        helpText="Enable this banner to display on your store"
+                        helpText="Enable this static banner to display wherever you place it in your theme"
                       />
                       <TextField
                         label="Priority"
@@ -411,7 +383,7 @@ export default function CreateBannerPage() {
                       </InlineStack>
                       
                       <Text as="p" variant="bodySm" tone="subdued">
-                        Each slide can have its own message, timer, and product. Add multiple slides to create a carousel.
+                        Each slide can have its own message, timer, and coupon code. Add multiple slides to create a carousel.
                       </Text>
 
                       {slides.map((slide, index) => (
@@ -470,138 +442,21 @@ export default function CreateBannerPage() {
                               </BlockStack>
                             )}
 
-                            {/* Product */}
+                            {/* Coupon */}
                             <Checkbox 
-                              label="Link to Product for this slide" 
-                              checked={slide.hasProduct} 
-                              onChange={(value) => updateSlide(index, "hasProduct", value)}
+                              label="Enable Coupon for this slide" 
+                              checked={slide.hasCoupon} 
+                              onChange={(value) => updateSlide(index, "hasCoupon", value)}
                             />
 
-                            {slide.hasProduct && (
-                              <BlockStack gap="200">
-                                 <div>
-                                   <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>Select Product</label>
-                                   <select 
-                                     value={slide.productId || ""}
-                                     onChange={(e) => {
-                                       const value = e.target.value;
-                                       
-                                       const selectedProduct = products.find((p: Product) => p.id === value)
-                                       
-                                       // Update all fields in one go to avoid state batching issues
-                                       const newSlides = [...slides];
-                                       newSlides[index] = {
-                                         ...newSlides[index],
-                                         productId: value,
-                                         productVariantId: "", // Reset variant when product changes
-                                         productTitle: selectedProduct ? selectedProduct.title : ""
-                                       };
-                                       setSlides(newSlides);
-                                     }}
-                                     style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}}
-                                   >
-                                     <option value="">Choose a product</option>
-                                     {products.map((product: Product) => (
-                                       <option key={product.id} value={product.id}>
-                                         {product.title} - ${product.price}
-                                       </option>
-                                     ))}
-                                   </select>
-                                   {products.length === 0 && (
-                                     <p style={{color: '#666', fontSize: '14px', marginTop: '4px'}}>
-                                       No products available. Click 'Sync Products' above.
-                                     </p>
-                                   )}
-                                 </div>
-
-                                 {slide.productId && (() => {
-                                   const selectedProduct = products.find((p: Product) => p.id === slide.productId)
-                                   const variants = selectedProduct?.variants || []
-                                   
-                                   if (variants.length > 0) {
-                                     return (
-                                       <div>
-                                         <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>
-                                           Select Variant <span style={{color: 'red'}}>*</span>
-                                         </label>
-                                         <select 
-                                           value={slide.productVariantId || ""}
-                                           onChange={(e) => {
-                                             const value = e.target.value;
-                                             
-                                             // Update variant in one go
-                                             const newSlides = [...slides];
-                                             newSlides[index] = {
-                                               ...newSlides[index],
-                                               productVariantId: value
-                                             };
-                                             setSlides(newSlides);
-                                           }}
-                                           style={{
-                                             width: '100%', 
-                                             padding: '8px', 
-                                             border: `1px solid ${!slide.productVariantId ? '#ff0000' : '#ccc'}`, 
-                                             borderRadius: '4px'
-                                           }}
-                                         >
-                                           <option value="">Choose a variant</option>
-                                           {variants.map((variant: { id: string; title: string; price: string; sku: string | null }) => (
-                                             <option key={variant.id} value={variant.id}>
-                                               {variant.title}
-                                             </option>
-                                           ))}
-                                         </select>
-                                         <p style={{
-                                           color: !slide.productVariantId ? '#ff0000' : '#666', 
-                                           fontSize: '14px', 
-                                           marginTop: '4px'
-                                         }}>
-                                           {!slide.productVariantId 
-                                             ? 'Please select a variant (required for add to cart)'
-                                             : 'Variant selected for add to cart functionality'
-                                           }
-                                         </p>
-                                       </div>
-                                     )
-                                   }
-                                   return null
-                                 })()}
-
-                                <TextField
-                                  label="Product Title Override"
-                                  value={slide.productTitle}
-                                  onChange={(value) => updateSlide(index, "productTitle", value)}
-                                  placeholder="Override product title (optional)"
-                                  autoComplete="off"
-                                />
-
-                                <Select
-                                  label="Action Type"
-                                  options={[
-                                    { label: "View Product", value: "view_product" },
-                                    { label: "Add to Cart", value: "add_to_cart" },
-                                    { label: "Buy Now", value: "buy_now" },
-                                  ]}
-                                  value={slide.actionType}
-                                  onChange={(value) => {
-                                    // Update both actionType and actionButtonText in one go
-                                    const newSlides = [...slides];
-                                    newSlides[index] = {
-                                      ...newSlides[index],
-                                      actionType: value,
-                                      actionButtonText: value === "view_product" ? "View Product" : value === "add_to_cart" ? "Add to Cart" : "Buy Now"
-                                    };
-                                    setSlides(newSlides);
-                                  }}
-                                />
-
-                                <TextField
-                                  label="Button Text"
-                                  value={slide.actionButtonText}
-                                  onChange={(value) => updateSlide(index, "actionButtonText", value)}
-                                  autoComplete="off"
-                                />
-                              </BlockStack>
+                            {slide.hasCoupon && (
+                              <TextField
+                                label="Coupon Code"
+                                value={slide.couponCode}
+                                onChange={(value) => updateSlide(index, "couponCode", value)}
+                                placeholder="Enter coupon code..."
+                                autoComplete="off"
+                              />
                             )}
                           </BlockStack>
                         </Card>
@@ -643,7 +498,6 @@ export default function CreateBannerPage() {
                         value={messageColor}
                         onChange={setMessageColor}
                         autoComplete="off"
-                        prefix="#"
                       />
 
                       <TextField
@@ -780,7 +634,7 @@ export default function CreateBannerPage() {
                         value={timerBackgroundColor}
                         onChange={setTimerBackgroundColor}
                         autoComplete="off"
-                        helpText="Use rgba for transparency (e.g., rgba(255,255,255,0.2))"
+                        helpText="Enter hex color code (e.g., ffffff for white)"
                       />
                       <TextField
                         label="Timer Border Color"
@@ -803,7 +657,6 @@ export default function CreateBannerPage() {
                         value={timerTextColor}
                         onChange={setTimerTextColor}
                         autoComplete="off"
-                        prefix="#"
                       />
                       <TextField
                         label="Timer Font Size (px)"
@@ -816,55 +669,52 @@ export default function CreateBannerPage() {
                     </BlockStack>
                   </Card>
 
-                  {/* Global Product/Button Styling */}
+                  {/* Global Coupon Styling */}
                   <Card>
                     <BlockStack gap="300">
                       <Text as="h3" variant="headingMd">
-                        Global Product/Button Styling
+                        Global Coupon Styling
                       </Text>
                       <TextField
-                        label="Product Font Size (px)"
+                        label="Coupon Background Color"
+                        name="couponBackgroundColor"
+                        value={couponBackgroundColor}
+                        onChange={setCouponBackgroundColor}
+                        autoComplete="off"
+                        helpText="Enter hex color code (e.g., fef3c7 for light yellow)"
+                      />
+                      <TextField
+                        label="Coupon Border Color"
+                        name="couponBorderColor"
+                        value={couponBorderColor}
+                        onChange={setCouponBorderColor}
+                        autoComplete="off"
+                      />
+                      <TextField
+                        label="Coupon Text Color"
+                        name="couponTextColor"
+                        value={couponTextColor}
+                        onChange={setCouponTextColor}
+                        autoComplete="off"
+                      />
+                      <TextField
+                        label="Coupon Font Size (px)"
                         type="number"
-                        name="productFontSize"
-                        value={productFontSize}
-                        onChange={setProductFontSize}
+                        name="couponFontSize"
+                        value={couponFontSize}
+                        onChange={setCouponFontSize}
                         autoComplete="off"
                       />
                       <TextField
-                        label="Button Text Color"
-                        name="actionButtonTextColor"
-                        value={actionButtonTextColor}
-                        onChange={setActionButtonTextColor}
-                        autoComplete="off"
-                        prefix="#"
-                      />
-                      <TextField
-                        label="Button Background Color"
-                        name="actionButtonBackgroundColor"
-                        value={actionButtonBackgroundColor}
-                        onChange={setActionButtonBackgroundColor}
-                        autoComplete="off"
-                        prefix="#"
-                      />
-                      <TextField
-                        label="Button Border Radius (px)"
+                        label="Coupon Padding (px)"
                         type="number"
-                        name="actionButtonBorderRadius"
-                        value={actionButtonBorderRadius}
-                        onChange={setActionButtonBorderRadius}
-                        autoComplete="off"
-                      />
-                      <TextField
-                        label="Button Padding (px)"
-                        type="number"
-                        name="actionButtonPadding"
-                        value={actionButtonPadding}
-                        onChange={setActionButtonPadding}
+                        name="couponPadding"
+                        value={couponPadding}
+                        onChange={setCouponPadding}
                         autoComplete="off"
                       />
                     </BlockStack>
                   </Card>
-
 
                   {/* Background */}
                   <Card>
@@ -879,8 +729,7 @@ export default function CreateBannerPage() {
                         value={bgColor}
                         onChange={setBgColor}
                         autoComplete="off"
-                        prefix="#"
-                        helpText="Main background color for the banner"
+                        helpText="Enter hex color code (e.g., ffffff for white)"
                       />
                     </BlockStack>
                   </Card>
@@ -895,9 +744,9 @@ export default function CreateBannerPage() {
                       loading={isSubmitting || isRedirecting}
                       disabled={isSubmitting || isRedirecting}
                     >
-                      {isSubmitting ? "Creating Banner..." : isRedirecting ? "Redirecting..." : "Create Banner"}
+                      {isSubmitting ? "Creating Static Banner..." : isRedirecting ? "Redirecting..." : "Create Static Banner"}
                     </Button>
-                    <Button url="/app/manage-banners" disabled={isSubmitting || isRedirecting}>
+                    <Button url="/app/manage-static-banners" disabled={isSubmitting || isRedirecting}>
                       Cancel
                     </Button>
                   </InlineStack>

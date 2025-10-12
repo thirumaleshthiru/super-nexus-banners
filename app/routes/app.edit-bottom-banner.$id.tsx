@@ -1,17 +1,36 @@
-import { useState, useEffect, useRef } from "react"
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs, redirect } from "@remix-run/node"
-import { useLoaderData, useNavigation, Form, Link } from "@remix-run/react"
-import { authenticate } from "../shopify.server"
-import { Card, Text, BlockStack, InlineStack, Button, TextField, Select, Checkbox, Divider, Page, Layout } from "@shopify/polaris"
+import {
+  Card,
+  Layout,
+  Page,
+  Text,
+  BlockStack,
+  InlineStack,
+  Button,
+  TextField,
+  Checkbox,
+  Select,
+  Divider,
+} from "@shopify/polaris"
 import { TitleBar } from "@shopify/app-bridge-react"
-import prisma from "../db.server"
+import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node"
+import { json, redirect } from "@remix-run/node"
+import { Form, useLoaderData, useNavigation } from "@remix-run/react"
+import { useState, useEffect, useRef } from "react"
+import prisma from "app/db.server"
+import { Link } from "@remix-run/react"
+import { authenticate } from "../shopify.server"
 
+// ---- Types ----
 interface Product {
   id: string
+  shopifyId: string
   title: string
+  handle: string
+  featuredImage: string | null
   price: string
-  sku: string | null
-  variants: Array<{
+  currencyCode: string
+  variantId: string | null
+  variants?: Array<{
     id: string
     title: string
     price: string
@@ -28,6 +47,8 @@ interface BottomBannerSlide {
   productId: string
   productTitle: string
   productVariantId: string
+  actionType: string
+  actionButtonText: string
   showImage: boolean
   priceOverride: string
   couponCode: string
@@ -37,53 +58,49 @@ interface BottomBannerSlide {
   viewProductButtonText: string
 }
 
-interface LoaderData {
-  products: Array<Product>
-  bottomBanner: any
-}
-
-// Helper function to parse variants JSON string
-function parseVariants(variantsString: string | null) {
-  if (!variantsString) return [];
-  try {
-    return JSON.parse(variantsString);
-  } catch {
-    return [];
-  }
-}
-
 // ---- Loader ----
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const auth = await authenticate.admin(request);
   if (auth instanceof Response) {
     return auth;
   }
-
+  
   const bannerId = params.id;
   if (!bannerId) {
     throw new Response("Banner ID is required", { status: 400 });
   }
 
-  // Fetch the existing bottom banner with slides
-  const bottomBanner = await (prisma as any).bottomBanner.findUnique({
-    where: { id: bannerId },
-    include: {
-      slides: {
-        orderBy: { order: 'asc' }
+  try {
+    // Fetch products
+    const products = await (prisma as any).product.findMany({
+      orderBy: { title: "asc" },
+    })
+
+    // Parse variants for each product
+    const productsWithVariants = products.map((product: any) => ({
+      ...product,
+      variants: product.variants ? JSON.parse(product.variants) : []
+    }))
+
+    // Fetch the banner with its slides
+    const banner = await (prisma as any).bottomBanner.findUnique({
+      where: { id: bannerId },
+      include: {
+        slides: {
+          orderBy: { order: 'asc' }
+        }
       }
+    })
+
+    if (!banner) {
+      throw new Response("Banner not found", { status: 404 });
     }
-  });
 
-  if (!bottomBanner) {
-    throw new Response("Bottom banner not found", { status: 404 });
+    return json({ products: productsWithVariants, banner })
+  } catch (error) {
+    console.error("Loader error:", error)
+    return json({ products: [], banner: null })
   }
-
-  // Fetch products
-  const products = await (prisma as any).product.findMany({
-    orderBy: { title: 'asc' }
-  });
-
-  return json({ products, bottomBanner });
 }
 
 // ---- Action ----
@@ -93,9 +110,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return auth;
   }
   
+  const bannerId = params.id;
+  if (!bannerId) {
+    throw new Response("Banner ID is required", { status: 400 });
+  }
+
   const formData = await request.formData()
   const intent = formData.get("_intent")
-  const bannerId = params.id;
 
   if (intent === "update") {
     // Parse slides from form data
@@ -154,8 +175,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
     const actionButtonText = slides.length > 0 ? slides[0].viewProductButtonText : "View Product"
     const actionButtonTextColor = "#" + String(formData.get("actionButtonTextColor") || "ffffff")
     const actionButtonBackgroundColor = "#" + String(formData.get("actionButtonBackgroundColor") || "1a1a1a")
-    const actionButtonBorderRadius = String(formData.get("actionButtonBorderRadius") || "8")
-    const actionButtonPadding = String(formData.get("actionButtonPadding") || "12")
+    const actionButtonBorderRadius = String(formData.get("actionButtonBorderRadius") || "6")
+    const actionButtonPadding = String(formData.get("actionButtonPadding") || "8")
 
     // Button settings
     const showAddToCartButton = slides.length > 0 ? slides[0].showAddToCartButton : false
@@ -173,48 +194,49 @@ export async function action({ request, params }: ActionFunctionArgs) {
     const isActive = formData.get("isActive") === "true"
 
     // Update bottom banner
-    const updatedBanner = await (prisma as any).bottomBanner.update({
+    await (prisma as any).bottomBanner.update({
       where: { id: bannerId },
       data: {
         isActive,
         bannerWidth,
-        customWidth: bannerWidth === "custom" ? customWidth : null,
+        customWidth: customWidth || null,
         bannerHeight,
-        customHeight: bannerHeight === "custom" ? customHeight : null,
-        bannerPadding: String(bannerPadding),
-        bannerLeftMargin: String(bannerLeftMargin),
-        bannerRightMargin: String(bannerRightMargin),
-        bannerTopMargin: String(bannerTopMargin),
-        bannerBottomMargin: String(bannerBottomMargin),
-        bannerBorderRadius: String(bannerBorderRadius),
+        customHeight: customHeight || null,
+        bannerPadding,
+        bannerLeftMargin,
+        bannerRightMargin,
+        bannerTopMargin,
+        bannerBottomMargin,
+        bannerBorderRadius,
         priority,
         areMessagesCarousel,
         messages,
-        messageFontSize: String(messageFontSize),
+        messageFontSize,
         messagePosition,
         messageColor,
-        messagePadding: String(messagePadding),
+        messagePadding,
         isTimer,
         startTime,
         endTime,
         timerBackgroundColor,
         timerBorderColor,
-        timerPadding: String(timerPadding),
+        timerPadding,
         timerTextColor,
-        timerFontSize: String(timerFontSize),
+        timerFontSize,
         hasProduct,
-        productTitle: manualProductTitle,
-        productImage,
+        productId: hasProduct && productId ? productId : null,
+        productTitle: hasProduct && manualProductTitle ? manualProductTitle : null,
+        productImage: hasProduct && productImage ? productImage : null,
         showImage,
-        priceOverride,
-        couponCode,
-        productFontSize: String(productFontSize),
+        priceOverride: hasProduct && priceOverride ? priceOverride : null,
+        couponCode: hasProduct && couponCode ? couponCode : null,
+        productFontSize,
         actionType,
-        actionButtonText,
+        actionButtonText: hasProduct ? actionButtonText : null,
         actionButtonTextColor,
         actionButtonBackgroundColor,
-        actionButtonBorderRadius: String(actionButtonBorderRadius),
-        actionButtonPadding: String(actionButtonPadding),
+        actionButtonBorderRadius,
+        actionButtonPadding,
         showAddToCartButton,
         showViewProductButton,
         addToCartButtonText,
@@ -224,25 +246,27 @@ export async function action({ request, params }: ActionFunctionArgs) {
         viewProductButtonTextColor,
         viewProductButtonBackgroundColor,
         bgColor,
-        hasSlides: true,
-      }
-    });
+      },
+    })
 
-    // Delete existing slides
+    // Delete all existing slides for this banner
     await (prisma as any).bottomBannerSlide.deleteMany({
       where: { bottomBannerId: bannerId }
-    });
+    })
 
     // Create new slides
     for (let i = 0; i < slides.length; i++) {
       const slide = slides[i]
       
+      // Use the productId directly since it's already the internal database ID
       let internalProductId = null;
       let numericVariantId = null;
       
       if (slide.hasProduct && slide.productId) {
+        // ProductId is already the internal database ID
         internalProductId = slide.productId;
         
+        // Variant ID should already be numeric from frontend
         if (slide.productVariantId) {
           numericVariantId = slide.productVariantId;
         }
@@ -259,7 +283,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       }
       
       const slideData = {
-        bottomBannerId: updatedBanner.id,
+        bottomBannerId: bannerId,
         order: i,
         message: slide.message,
         isTimer: slide.isTimer,
@@ -273,8 +297,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
         priceOverride: slide.hasProduct ? slide.priceOverride : null,
         couponCode: slide.hasProduct ? slide.couponCode : null,
         productVariantId: numericVariantId,
-        actionType: slide.hasProduct ? "view_product" : "view_product",
-        actionButtonText: slide.hasProduct ? slide.viewProductButtonText : null,
+        actionType: slide.hasProduct ? slide.actionType : "view_product",
+        actionButtonText: slide.hasProduct ? slide.actionButtonText : null,
         showAddToCartButton: slide.showAddToCartButton,
         showViewProductButton: slide.showViewProductButton,
         addToCartButtonText: slide.addToCartButtonText,
@@ -289,12 +313,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return redirect("/app/manage-bottom-banners")
   }
 
-  return json({ success: true })
+  return redirect("/app/manage-bottom-banners")
 }
 
 // ---- UI ----
 export default function EditBottomBannerPage() {
-  const { products, bottomBanner } = useLoaderData<typeof loader>()
+  const { products, banner } = useLoaderData<typeof loader>()
   const navigation = useNavigation()
   const isSubmitting = navigation.state === "submitting"
   const isRedirecting = navigation.state === "loading" && navigation.formData == null
@@ -303,12 +327,12 @@ export default function EditBottomBannerPage() {
   const defaultSettings = {
     messageFontSize: "16",
     messagePosition: "left", 
-    messageColor: "2d3748", // Professional dark gray
+    messageColor: "2d3748",
     messagePadding: "12",
-    timerBackgroundColor: "f7fafc", // Light gray
-    timerBorderColor: "e2e8f0", // Subtle border
+    timerBackgroundColor: "f7fafc",
+    timerBorderColor: "e2e8f0",
     timerPadding: "8",
-    timerTextColor: "2d3748", // Professional dark gray
+    timerTextColor: "2d3748",
     timerFontSize: "14",
     productFontSize: "16",
     actionButtonTextColor: "ffffff",
@@ -316,10 +340,10 @@ export default function EditBottomBannerPage() {
     actionButtonBorderRadius: "8",
     actionButtonPadding: "12",
     addToCartButtonTextColor: "ffffff",
-    addToCartButtonBackgroundColor: "2563eb", // Professional blue
+    addToCartButtonBackgroundColor: "2563eb",
     viewProductButtonTextColor: "ffffff", 
-    viewProductButtonBackgroundColor: "374151", // Professional dark gray
-    bgColor: "ffffff", // Clean white background
+    viewProductButtonBackgroundColor: "374151",
+    bgColor: "ffffff",
     bannerPadding: "16",
     bannerTopMargin: "0",
     bannerBottomMargin: "0", 
@@ -328,23 +352,87 @@ export default function EditBottomBannerPage() {
     bannerBorderRadius: "12"
   }
 
-  // Banner Layout & Positioning - Prefilled from existing banner
-  const [isActive, setIsActive] = useState(bottomBanner.isActive)
-  const [bannerWidth, setBannerWidth] = useState(bottomBanner.bannerWidth || "full")
-  const [customWidth, setCustomWidth] = useState(bottomBanner.customWidth || "")
-  const [bannerHeight, setBannerHeight] = useState(bottomBanner.bannerHeight || "auto")
-  const [customHeight, setCustomHeight] = useState(bottomBanner.customHeight || "")
-  const [bannerPadding, setBannerPadding] = useState(String(bottomBanner.bannerPadding || defaultSettings.bannerPadding))
-  const [bannerLeftMargin, setBannerLeftMargin] = useState(String(bottomBanner.bannerLeftMargin || defaultSettings.bannerLeftMargin))
-  const [bannerRightMargin, setBannerRightMargin] = useState(String(bottomBanner.bannerRightMargin || defaultSettings.bannerRightMargin))
-  const [bannerTopMargin, setBannerTopMargin] = useState(String(bottomBanner.bannerTopMargin || defaultSettings.bannerTopMargin))
-  const [bannerBottomMargin, setBannerBottomMargin] = useState(String(bottomBanner.bannerBottomMargin || defaultSettings.bannerBottomMargin))
-  const [bannerBorderRadius, setBannerBorderRadius] = useState(String(bottomBanner.bannerBorderRadius || defaultSettings.bannerBorderRadius))
-  const [priority, setPriority] = useState(String(bottomBanner.priority || "0"))
+  // Helper to strip # from hex colors
+  const stripHash = (color: string) => color?.replace('#', '') || ''
 
-  // Reset to defaults function - resets EVERYTHING
+  // Convert existing slides to form format
+  const existingSlides: BottomBannerSlide[] = banner?.slides?.length > 0 
+    ? banner.slides.map((slide: any) => ({
+        message: slide.message || "",
+        isTimer: slide.isTimer || false,
+        startTime: slide.startTime ? new Date(slide.startTime).toISOString().slice(0, 16) : "",
+        endTime: slide.endTime ? new Date(slide.endTime).toISOString().slice(0, 16) : "",
+        hasProduct: slide.hasProduct || false,
+        productId: slide.productId || "",
+        productTitle: slide.productTitle || "",
+        productVariantId: slide.productVariantId || "",
+        actionType: slide.actionType || "view_product",
+        actionButtonText: slide.actionButtonText || "View Product",
+        showImage: slide.showImage || false,
+        priceOverride: slide.priceOverride || "",
+        couponCode: slide.couponCode || "",
+        showAddToCartButton: slide.showAddToCartButton || false,
+        showViewProductButton: slide.showViewProductButton || false,
+        addToCartButtonText: slide.addToCartButtonText || "Add to Cart",
+        viewProductButtonText: slide.viewProductButtonText || "View Product"
+      }))
+    : [{
+        message: "🎉 Special Offer! Limited Time Only",
+        isTimer: true,
+        startTime: "",
+        endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+        hasProduct: true,
+        productId: products.length > 0 ? products[0].id : "",
+        productTitle: products.length > 0 ? products[0].title : "",
+        productVariantId: products.length > 0 && products[0].variants.length > 0 ? products[0].variants[0].id : "",
+        actionType: "view_product",
+        actionButtonText: "View Product",
+        showImage: true,
+        priceOverride: products.length > 0 ? `$${(parseFloat(products[0].price) * 0.8).toFixed(2)}` : "$99.99",
+        couponCode: "SAVE20",
+        showAddToCartButton: true,
+        showViewProductButton: true,
+        addToCartButtonText: "Add to Cart",
+        viewProductButtonText: "View Product"
+      }]
+
+  // Banner Layout & Positioning - Prefilled from existing banner
+  const [isActive, setIsActive] = useState(banner?.isActive || false)
+  const [bannerWidth, setBannerWidth] = useState(banner?.bannerWidth || "full")
+  const [customWidth, setCustomWidth] = useState(banner?.customWidth || "")
+  const [bannerHeight, setBannerHeight] = useState(banner?.bannerHeight || "auto")
+  const [customHeight, setCustomHeight] = useState(banner?.customHeight || "")
+  const [bannerPadding, setBannerPadding] = useState(String(banner?.bannerPadding || defaultSettings.bannerPadding))
+  const [bannerLeftMargin, setBannerLeftMargin] = useState(String(banner?.bannerLeftMargin || defaultSettings.bannerLeftMargin))
+  const [bannerRightMargin, setBannerRightMargin] = useState(String(banner?.bannerRightMargin || defaultSettings.bannerRightMargin))
+  const [bannerTopMargin, setBannerTopMargin] = useState(String(banner?.bannerTopMargin || defaultSettings.bannerTopMargin))
+  const [bannerBottomMargin, setBannerBottomMargin] = useState(String(banner?.bannerBottomMargin || defaultSettings.bannerBottomMargin))
+  const [bannerBorderRadius, setBannerBorderRadius] = useState(String(banner?.bannerBorderRadius || defaultSettings.bannerBorderRadius))
+  const [priority, setPriority] = useState(String(banner?.priority || "0"))
+
+  // Default slide for new slides
+  const defaultSlide: BottomBannerSlide = {
+    message: "🎯 New Offer Available!",
+    isTimer: true,
+    startTime: "",
+    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    hasProduct: true,
+    productId: products.length > 0 ? products[0].id : "",
+    productTitle: products.length > 0 ? products[0].title : "",
+    productVariantId: products.length > 0 && products[0].variants.length > 0 ? products[0].variants[0].id : "",
+    actionType: "view_product",
+    actionButtonText: "View Product",
+    showImage: true,
+    priceOverride: products.length > 0 ? `$${(parseFloat(products[0].price) * 0.9).toFixed(2)}` : "$89.99",
+    couponCode: "NEW10",
+    showAddToCartButton: true,
+    showViewProductButton: true,
+    addToCartButtonText: "Add to Cart",
+    viewProductButtonText: "View Product"
+  }
+
+  // Reset to defaults function
   const resetToDefaults = () => {
-    // Reset all styling
     setMessageFontSize(defaultSettings.messageFontSize)
     setMessagePosition(defaultSettings.messagePosition)
     setMessageColor(defaultSettings.messageColor)
@@ -370,56 +458,14 @@ export default function EditBottomBannerPage() {
     setBannerTopMargin(defaultSettings.bannerTopMargin)
     setBannerBottomMargin(defaultSettings.bannerBottomMargin)
     setBannerBorderRadius(defaultSettings.bannerBorderRadius)
-    
-    // Reset banner settings
     setIsActive(false)
     setBannerWidth("full")
     setCustomWidth("")
     setBannerHeight("auto")
     setCustomHeight("")
     setPriority("0")
-    
-    // Reset slides to default
     setSlides([defaultSlide])
   }
-
-  // Default slide with prefilled professional content
-  const defaultSlide: BottomBannerSlide = {
-    message: "🎉 Special Offer! Limited Time Only",
-    isTimer: true,
-    startTime: "",
-    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 7 days from now
-    hasProduct: true,
-    productId: products.length > 0 ? products[0].id : "",
-    productTitle: products.length > 0 ? products[0].title : "",
-    productVariantId: products.length > 0 && parseVariants(products[0].variants).length > 0 ? parseVariants(products[0].variants)[0].id : "",
-    showImage: true,
-    priceOverride: products.length > 0 ? `$${(parseFloat(products[0].price) * 0.8).toFixed(2)}` : "$99.99", // 20% discount
-    couponCode: "SAVE20",
-    showAddToCartButton: true,
-    showViewProductButton: true,
-    addToCartButtonText: "Add to Cart",
-    viewProductButtonText: "View Product"
-  }
-
-  // Convert existing slides to the format expected by the form
-  const existingSlides: BottomBannerSlide[] = bottomBanner.slides?.map((slide: any) => ({
-    message: slide.message || "",
-    isTimer: slide.isTimer || false,
-    startTime: slide.startTime ? new Date(slide.startTime).toISOString().slice(0, 16) : "",
-    endTime: slide.endTime ? new Date(slide.endTime).toISOString().slice(0, 16) : "",
-    hasProduct: slide.hasProduct || false,
-    productId: slide.productId || "",
-    productTitle: slide.productTitle || "",
-    productVariantId: slide.productVariantId || "",
-    showImage: slide.showImage || false,
-    priceOverride: slide.priceOverride || "",
-    couponCode: slide.couponCode || "",
-    showAddToCartButton: slide.showAddToCartButton || false,
-    showViewProductButton: slide.showViewProductButton || false,
-    addToCartButtonText: slide.addToCartButtonText || "Add to Cart",
-    viewProductButtonText: slide.viewProductButtonText || "View Product"
-  })) || [defaultSlide];
 
   // Slide System - Prefilled from existing banner
   const [slides, setSlides] = useState<BottomBannerSlide[]>(existingSlides)
@@ -433,40 +479,31 @@ export default function EditBottomBannerPage() {
   }, [slides]);
 
   // Styling (global) - Prefilled from existing banner
-  const [messageFontSize, setMessageFontSize] = useState(String(bottomBanner.messageFontSize || defaultSettings.messageFontSize))
-  const [messagePosition, setMessagePosition] = useState(bottomBanner.messagePosition || defaultSettings.messagePosition)
-  const [messageColor, setMessageColor] = useState(bottomBanner.messageColor?.replace('#', '') || defaultSettings.messageColor)
-  const [messagePadding, setMessagePadding] = useState(String(bottomBanner.messagePadding || defaultSettings.messagePadding))
-  const [timerBackgroundColor, setTimerBackgroundColor] = useState(bottomBanner.timerBackgroundColor?.replace('#', '') || defaultSettings.timerBackgroundColor)
-  const [timerBorderColor, setTimerBorderColor] = useState(bottomBanner.timerBorderColor?.replace('#', '') || defaultSettings.timerBorderColor)
-  const [timerPadding, setTimerPadding] = useState(String(bottomBanner.timerPadding || defaultSettings.timerPadding))
-  const [timerTextColor, setTimerTextColor] = useState(bottomBanner.timerTextColor?.replace('#', '') || defaultSettings.timerTextColor)
-  const [timerFontSize, setTimerFontSize] = useState(String(bottomBanner.timerFontSize || defaultSettings.timerFontSize))
-  const [productFontSize, setProductFontSize] = useState(String(bottomBanner.productFontSize || defaultSettings.productFontSize))
-  const [actionButtonTextColor, setActionButtonTextColor] = useState(bottomBanner.actionButtonTextColor?.replace('#', '') || defaultSettings.actionButtonTextColor)
-  const [actionButtonBackgroundColor, setActionButtonBackgroundColor] = useState(bottomBanner.actionButtonBackgroundColor?.replace('#', '') || defaultSettings.actionButtonBackgroundColor)
-  const [actionButtonBorderRadius, setActionButtonBorderRadius] = useState(String(bottomBanner.actionButtonBorderRadius || defaultSettings.actionButtonBorderRadius))
-  const [actionButtonPadding, setActionButtonPadding] = useState(String(bottomBanner.actionButtonPadding || defaultSettings.actionButtonPadding))
-  const [addToCartButtonTextColor, setAddToCartButtonTextColor] = useState(bottomBanner.addToCartButtonTextColor?.replace('#', '') || defaultSettings.addToCartButtonTextColor)
-  const [addToCartButtonBackgroundColor, setAddToCartButtonBackgroundColor] = useState(bottomBanner.addToCartButtonBackgroundColor?.replace('#', '') || defaultSettings.addToCartButtonBackgroundColor)
-  const [viewProductButtonTextColor, setViewProductButtonTextColor] = useState(bottomBanner.viewProductButtonTextColor?.replace('#', '') || defaultSettings.viewProductButtonTextColor)
-  const [viewProductButtonBackgroundColor, setViewProductButtonBackgroundColor] = useState(bottomBanner.viewProductButtonBackgroundColor?.replace('#', '') || defaultSettings.viewProductButtonBackgroundColor)
+  const [messageFontSize, setMessageFontSize] = useState(String(banner?.messageFontSize || defaultSettings.messageFontSize))
+  const [messagePosition, setMessagePosition] = useState(banner?.messagePosition || defaultSettings.messagePosition)
+  const [messageColor, setMessageColor] = useState(stripHash(banner?.messageColor) || defaultSettings.messageColor)
+  const [messagePadding, setMessagePadding] = useState(String(banner?.messagePadding || defaultSettings.messagePadding))
+  const [timerBackgroundColor, setTimerBackgroundColor] = useState(stripHash(banner?.timerBackgroundColor) || defaultSettings.timerBackgroundColor)
+  const [timerBorderColor, setTimerBorderColor] = useState(stripHash(banner?.timerBorderColor) || defaultSettings.timerBorderColor)
+  const [timerPadding, setTimerPadding] = useState(String(banner?.timerPadding || defaultSettings.timerPadding))
+  const [timerTextColor, setTimerTextColor] = useState(stripHash(banner?.timerTextColor) || defaultSettings.timerTextColor)
+  const [timerFontSize, setTimerFontSize] = useState(String(banner?.timerFontSize || defaultSettings.timerFontSize))
+  const [productFontSize, setProductFontSize] = useState(String(banner?.productFontSize || defaultSettings.productFontSize))
+  const [actionButtonTextColor, setActionButtonTextColor] = useState(stripHash(banner?.actionButtonTextColor) || defaultSettings.actionButtonTextColor)
+  const [actionButtonBackgroundColor, setActionButtonBackgroundColor] = useState(stripHash(banner?.actionButtonBackgroundColor) || defaultSettings.actionButtonBackgroundColor)
+  const [actionButtonBorderRadius, setActionButtonBorderRadius] = useState(String(banner?.actionButtonBorderRadius || defaultSettings.actionButtonBorderRadius))
+  const [actionButtonPadding, setActionButtonPadding] = useState(String(banner?.actionButtonPadding || defaultSettings.actionButtonPadding))
+  const [addToCartButtonTextColor, setAddToCartButtonTextColor] = useState(stripHash(banner?.addToCartButtonTextColor) || defaultSettings.addToCartButtonTextColor)
+  const [addToCartButtonBackgroundColor, setAddToCartButtonBackgroundColor] = useState(stripHash(banner?.addToCartButtonBackgroundColor) || defaultSettings.addToCartButtonBackgroundColor)
+  const [viewProductButtonTextColor, setViewProductButtonTextColor] = useState(stripHash(banner?.viewProductButtonTextColor) || defaultSettings.viewProductButtonTextColor)
+  const [viewProductButtonBackgroundColor, setViewProductButtonBackgroundColor] = useState(stripHash(banner?.viewProductButtonBackgroundColor) || defaultSettings.viewProductButtonBackgroundColor)
 
   // Background - Prefilled from existing banner
-  const [bgColor, setBgColor] = useState(bottomBanner.bgColor?.replace('#', '') || defaultSettings.bgColor)
+  const [bgColor, setBgColor] = useState(stripHash(banner?.bgColor) || defaultSettings.bgColor)
 
   // Helper functions for slides
   const addSlide = () => {
-    setSlides([...slides, {
-      ...defaultSlide,
-      message: "🎯 New Offer Available!",
-      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 7 days from now
-      couponCode: "NEW10",
-      productId: products.length > 0 ? products[0].id : "",
-      productTitle: products.length > 0 ? products[0].title : "",
-      productVariantId: products.length > 0 && parseVariants(products[0].variants).length > 0 ? parseVariants(products[0].variants)[0].id : "",
-      priceOverride: products.length > 0 ? `$${(parseFloat(products[0].price) * 0.9).toFixed(2)}` : "$89.99" // 10% discount for new slides
-    }])
+    setSlides([...slides, defaultSlide])
   }
 
   const removeSlide = (index: number) => {
@@ -481,21 +518,22 @@ export default function EditBottomBannerPage() {
     setSlides(newSlides)
   }
 
-  const handleSubmit = (event: React.FormEvent) => {
-    if (isSubmitting) {
-      event.preventDefault()
-      return
-    }
-
-    // Validate slides with products have variants selected
-    const invalidSlides = slides.filter((slide, index) => 
-      slide.hasProduct && slide.productId && !slide.productVariantId
-    )
-
+  // Handle form submission with validation
+  const handleSubmit = (e: React.FormEvent) => {
+    // Validate that all slides with products have variants selected
+    const invalidSlides = slidesRef.current.filter(
+      (slide, idx) => slide.hasProduct && slide.productId && !slide.productVariantId
+    );
+    
     if (invalidSlides.length > 0) {
-      event.preventDefault()
-      alert('Please select a variant for all slides that have products selected.')
-      return
+      e.preventDefault();
+      const slideNumbers = slidesRef.current
+        .map((slide, idx) => slide.hasProduct && slide.productId && !slide.productVariantId ? idx + 1 : null)
+        .filter(n => n !== null)
+        .join(', ');
+      
+      alert(`Please select a variant for slide(s): ${slideNumbers}`);
+      return false;
     }
   }
 
@@ -526,168 +564,244 @@ export default function EditBottomBannerPage() {
               <Form method="post" onSubmit={handleSubmit}>
                 <input type="hidden" name="_intent" value="update" />
                 <input type="hidden" name="isActive" value={isActive.toString()} />
-                <input type="hidden" name="slides" value={JSON.stringify(slides)} />
+                
+                {/* Use a controlled input that updates from state with key to force re-render */}
+                <input 
+                  type="hidden" 
+                  name="slides" 
+                  value={JSON.stringify(slides)} 
+                  key={JSON.stringify(slides)}
+                />
 
-                <BlockStack gap="500">
-                  {/* Banner Status */}
+                <BlockStack gap="400">
+                  {/* Basic Settings */}
                   <Card>
                     <BlockStack gap="300">
                       <Text as="h3" variant="headingMd">
-                        Banner Status
+                        Basic Settings
                       </Text>
                       <Checkbox 
-                        label="Active" 
+                        label="Activate Bottom Banner" 
                         checked={isActive} 
                         onChange={setIsActive}
+                        helpText="Enable this bottom banner to display at the bottom of your store pages"
+                      />
+                      <TextField
+                        label="Priority"
+                        type="number"
+                        name="priority"
+                        value={priority}
+                        onChange={setPriority}
+                        helpText="Lower numbers appear first (0 = highest priority)"
+                        autoComplete="off"
                       />
                     </BlockStack>
                   </Card>
 
-                  {/* Slide System */}
+                  {/* Slide Builder */}
                   <Card>
-                    <BlockStack gap="300">
+                    <BlockStack gap="400">
                       <InlineStack align="space-between">
                         <Text as="h3" variant="headingMd">
-                          Banner Slides
+                          Slides Configuration {slides.length > 1 && `(${slides.length} slides)`}
                         </Text>
-                        <Button onClick={addSlide} size="slim">
-                          Add Slide
+                        <Button onClick={addSlide} variant="primary" tone="success">
+                          + Add Slide
                         </Button>
                       </InlineStack>
+                      
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Each slide can have its own message, timer, product, and buttons. Add multiple slides to create a carousel.
+                      </Text>
 
-                      <BlockStack gap="400">
-                        {slides.map((slide, index) => (
-                          <Card key={index}>
-                            <BlockStack gap="300">
-                              <InlineStack align="space-between">
-                                <Text as="h4" variant="headingSm">
-                                  Slide {index + 1}
-                                </Text>
-                                {slides.length > 1 && (
-                                  <Button 
-                                    variant="plain" 
-                                    tone="critical" 
-                                    size="slim"
-                                    onClick={() => removeSlide(index)}
-                                  >
-                                    Remove
-                                  </Button>
-                                )}
-                              </InlineStack>
-
-                              <TextField
-                                label="Message"
-                                value={slide.message}
-                                onChange={(value) => updateSlide(index, "message", value)}
-                                placeholder="Enter your banner message"
-                                autoComplete="off"
-                              />
-
-                              <Checkbox 
-                                label="Enable Timer" 
-                                checked={slide.isTimer} 
-                                onChange={(value) => updateSlide(index, "isTimer", value)}
-                              />
-
-                              {slide.isTimer && (
-                                <InlineStack gap="200">
-                                  <TextField
-                                    label="Start Time"
-                                    type="datetime-local"
-                                    value={slide.startTime}
-                                    onChange={(value) => updateSlide(index, "startTime", value)}
-                                    autoComplete="off"
-                                  />
-                                  <TextField
-                                    label="End Time"
-                                    type="datetime-local"
-                                    value={slide.endTime}
-                                    onChange={(value) => updateSlide(index, "endTime", value)}
-                                    autoComplete="off"
-                                  />
-                                </InlineStack>
+                      {slides.map((slide, index) => (
+                        <Card key={index}>
+                          <BlockStack gap="400">
+                            <InlineStack align="space-between">
+                              <Text as="h4" variant="headingSm">
+                                Slide {index + 1}
+                              </Text>
+                              {slides.length > 1 && (
+                                <Button 
+                                  onClick={() => removeSlide(index)}
+                                  tone="critical"
+                                  variant="plain"
+                                >
+                                  Remove Slide
+                                </Button>
                               )}
+                            </InlineStack>
 
-                              <Checkbox 
-                                label="Link to Product for this slide" 
-                                checked={slide.hasProduct} 
-                                onChange={(value) => updateSlide(index, "hasProduct", value)}
-                              />
+                            <Divider />
 
-                              {slide.hasProduct && (
-                                <>
-                                  <Select
-                                    label="Select Product"
-                                    options={[
-                                      { label: "Choose a product", value: "" },
-                                      ...products.map((product: any) => ({
-                                        label: `${product.title} - $${product.price}`,
-                                        value: product.id
-                                      }))
-                                    ]}
-                                    value={slide.productId}
-                                    onChange={(value) => {
-                                      const selectedProduct = products.find((p: any) => p.id === value)
-                                      updateSlide(index, "productId", value)
-                                      updateSlide(index, "productTitle", selectedProduct?.title || "")
-                                      updateSlide(index, "productVariantId", parseVariants(selectedProduct?.variants)[0]?.id || "")
-                                    }}
-                                  />
+                            {/* Message */}
+                            <TextField
+                              label="Message"
+                              value={slide.message}
+                              onChange={(value) => updateSlide(index, "message", value)}
+                              autoComplete="off"
+                              placeholder="Enter your message..."
+                            />
 
-                                  {slide.productId && (() => {
-                                    const selectedProduct = products.find((p: any) => p.id === slide.productId)
-                                    return selectedProduct ? (
-                                      <Select
-                                        label="Select Variant *"
-                                        options={[
-                                          { label: "Choose a variant", value: "" },
-                                          ...parseVariants(selectedProduct.variants).map((variant: any) => ({
-                                            label: `${variant.title} - $${variant.price}`,
-                                            value: variant.id
-                                          }))
-                                        ]}
-                                        value={slide.productVariantId}
-                                        onChange={(value) => updateSlide(index, "productVariantId", value)}
-                                        error={slide.hasProduct && slide.productId && !slide.productVariantId ? "Please select a variant (required for add to cart)" : undefined}
-                                      />
-                                    ) : null
-                                  })()}
+                            {/* Timer */}
+                            <Checkbox 
+                              label="Enable Timer for this slide" 
+                              checked={slide.isTimer} 
+                              onChange={(value) => updateSlide(index, "isTimer", value)}
+                            />
 
-                                  <TextField
-                                    label="Product Title Override"
-                                    value={slide.productTitle}
-                                    onChange={(value) => updateSlide(index, "productTitle", value)}
-                                    placeholder="Override product title (optional)"
-                                    autoComplete="off"
-                                  />
+                            {slide.isTimer && (
+                              <BlockStack gap="200">
+                                <TextField
+                                  label="Start Time"
+                                  type="datetime-local"
+                                  value={slide.startTime}
+                                  onChange={(value) => updateSlide(index, "startTime", value)}
+                                  autoComplete="off"
+                                />
+                                <TextField
+                                  label="End Time"
+                                  type="datetime-local"
+                                  value={slide.endTime}
+                                  onChange={(value) => updateSlide(index, "endTime", value)}
+                                  autoComplete="off"
+                                  helpText="Timer will count down to this time"
+                                />
+                              </BlockStack>
+                            )}
 
-                                  <Checkbox 
-                                    label="Show Product Image" 
-                                    checked={slide.showImage} 
-                                    onChange={(value) => updateSlide(index, "showImage", value)}
-                                    helpText="Shows the product's featured image from the products table"
-                                  />
+                            {/* Product */}
+                            <Checkbox 
+                              label="Link to Product for this slide" 
+                              checked={slide.hasProduct} 
+                              onChange={(value) => updateSlide(index, "hasProduct", value)}
+                            />
 
-                                  <TextField
-                                    label="Price Override"
-                                    value={slide.priceOverride}
-                                    onChange={(value) => updateSlide(index, "priceOverride", value)}
-                                    placeholder="Override product price (optional)"
-                                    autoComplete="off"
-                                  />
+                            {slide.hasProduct && (
+                              <BlockStack gap="200">
+                                 <div>
+                                   <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>Select Product</label>
+                                   <select 
+                                     value={slide.productId || ""}
+                                     onChange={(e) => {
+                                       const value = e.target.value;
+                                       
+                                       const selectedProduct = products.find((p: Product) => p.id === value)
+                                       
+                                       // Update all fields in one go to avoid state batching issues
+                                       const newSlides = [...slides];
+                                       newSlides[index] = {
+                                         ...newSlides[index],
+                                         productId: value,
+                                         productVariantId: "", // Reset variant when product changes
+                                         productTitle: selectedProduct ? selectedProduct.title : ""
+                                       };
+                                       setSlides(newSlides);
+                                     }}
+                                     style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}}
+                                   >
+                                     <option value="">Choose a product</option>
+                                     {products.map((product: Product) => (
+                                       <option key={product.id} value={product.id}>
+                                         {product.title} - ${product.price}
+                                       </option>
+                                     ))}
+                                   </select>
+                                   {products.length === 0 && (
+                                     <p style={{color: '#666', fontSize: '14px', marginTop: '4px'}}>
+                                       No products available. Click 'Sync Products' above.
+                                     </p>
+                                   )}
+                                 </div>
 
-                                  <TextField
-                                    label="Coupon Code"
-                                    value={slide.couponCode}
-                                    onChange={(value) => updateSlide(index, "couponCode", value)}
-                                    placeholder="Enter coupon code (optional)"
-                                    autoComplete="off"
-                                  />
+                                 {slide.productId && (() => {
+                                   const selectedProduct = products.find((p: Product) => p.id === slide.productId)
+                                   const variants = selectedProduct?.variants || []
+                                   
+                                   if (variants.length > 0) {
+                                     return (
+                                       <div>
+                                         <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>
+                                           Select Variant <span style={{color: 'red'}}>*</span>
+                                         </label>
+                                         <select 
+                                           value={slide.productVariantId || ""}
+                                           onChange={(e) => {
+                                             const value = e.target.value;
+                                             
+                                             // Update variant in one go
+                                             const newSlides = [...slides];
+                                             newSlides[index] = {
+                                               ...newSlides[index],
+                                               productVariantId: value
+                                             };
+                                             setSlides(newSlides);
+                                           }}
+                                           style={{
+                                             width: '100%', 
+                                             padding: '8px', 
+                                             border: `1px solid ${!slide.productVariantId ? '#ff0000' : '#ccc'}`, 
+                                             borderRadius: '4px'
+                                           }}
+                                         >
+                                           <option value="">Choose a variant</option>
+                                           {variants.map((variant: { id: string; title: string; price: string; sku: string | null }) => (
+                                             <option key={variant.id} value={variant.id}>
+                                               {variant.title} - ${variant.price}
+                                             </option>
+                                           ))}
+                                         </select>
+                                         <p style={{
+                                           color: !slide.productVariantId ? '#ff0000' : '#666', 
+                                           fontSize: '14px', 
+                                           marginTop: '4px'
+                                         }}>
+                                           {!slide.productVariantId 
+                                             ? 'Please select a variant (required for add to cart)'
+                                             : 'Variant selected for add to cart functionality'
+                                           }
+                                         </p>
+                                       </div>
+                                     )
+                                   }
+                                   return null
+                                 })()}
 
-                                  <Text as="h4" variant="headingSm">
-                                    Button Configuration
-                                  </Text>
+                                <TextField
+                                  label="Product Title Override"
+                                  value={slide.productTitle}
+                                  onChange={(value) => updateSlide(index, "productTitle", value)}
+                                  placeholder="Override product title (optional)"
+                                  autoComplete="off"
+                                />
 
+                                <Checkbox 
+                                  label="Show Product Image" 
+                                  checked={slide.showImage} 
+                                  onChange={(value) => updateSlide(index, "showImage", value)}
+                                  helpText="Shows the product's featured image from the products table"
+                                />
+
+                                <TextField
+                                  label="Price Override"
+                                  value={slide.priceOverride}
+                                  onChange={(value) => updateSlide(index, "priceOverride", value)}
+                                  placeholder="Override product price (optional)"
+                                  autoComplete="off"
+                                />
+
+                                <TextField
+                                  label="Coupon Code"
+                                  value={slide.couponCode}
+                                  onChange={(value) => updateSlide(index, "couponCode", value)}
+                                  placeholder="Enter coupon code (optional)"
+                                  autoComplete="off"
+                                />
+
+                                {/* Button Configuration */}
+                                <BlockStack gap="200">
+                                  <Text as="h5" variant="headingSm">Button Configuration</Text>
+                                  
                                   <Checkbox 
                                     label="Show Add to Cart Button" 
                                     checked={slide.showAddToCartButton} 
@@ -699,7 +813,6 @@ export default function EditBottomBannerPage() {
                                       label="Add to Cart Button Text"
                                       value={slide.addToCartButtonText}
                                       onChange={(value) => updateSlide(index, "addToCartButtonText", value)}
-                                      placeholder="Add to Cart"
                                       autoComplete="off"
                                     />
                                   )}
@@ -715,16 +828,38 @@ export default function EditBottomBannerPage() {
                                       label="View Product Button Text"
                                       value={slide.viewProductButtonText}
                                       onChange={(value) => updateSlide(index, "viewProductButtonText", value)}
-                                      placeholder="View Product"
                                       autoComplete="off"
                                     />
                                   )}
-                                </>
-                              )}
-                            </BlockStack>
-                          </Card>
-                        ))}
-                      </BlockStack>
+
+                                  <Checkbox 
+                                    label="Show Buy Now Button" 
+                                    checked={slide.actionType === "buy_now"} 
+                                    onChange={(value) => {
+                                      const newSlides = [...slides];
+                                      newSlides[index] = {
+                                        ...newSlides[index],
+                                        actionType: value ? "buy_now" : "view_product",
+                                        actionButtonText: value ? "Buy Now" : "View Product"
+                                      };
+                                      setSlides(newSlides);
+                                    }}
+                                  />
+
+                                  {slide.actionType === "buy_now" && (
+                                    <TextField
+                                      label="Buy Now Button Text"
+                                      value={slide.actionButtonText}
+                                      onChange={(value) => updateSlide(index, "actionButtonText", value)}
+                                      autoComplete="off"
+                                    />
+                                  )}
+                                </BlockStack>
+                              </BlockStack>
+                            )}
+                          </BlockStack>
+                        </Card>
+                      ))}
                     </BlockStack>
                   </Card>
 
@@ -750,7 +885,7 @@ export default function EditBottomBannerPage() {
                         options={[
                           { label: "Left", value: "left" },
                           { label: "Center", value: "center" },
-                          { label: "Right", value: "right" }
+                          { label: "Right", value: "right" },
                         ]}
                         value={messagePosition}
                         onChange={setMessagePosition}
@@ -762,7 +897,6 @@ export default function EditBottomBannerPage() {
                         value={messageColor}
                         onChange={setMessageColor}
                         autoComplete="off"
-                        helpText="Enter hex color code (e.g., ffffff for white)"
                       />
 
                       <TextField
@@ -776,7 +910,118 @@ export default function EditBottomBannerPage() {
                     </BlockStack>
                   </Card>
 
-                  {/* Timer Styling */}
+                  {/* Banner Layout & Positioning */}
+                  <Card>
+                    <BlockStack gap="300">
+                      <Text as="h3" variant="headingMd">
+                        Layout & Positioning
+                      </Text>
+
+                      <Select
+                        label="Banner Width"
+                        name="bannerWidth"
+                        options={[
+                          { label: "Full Width", value: "full" },
+                          { label: "Custom (vw)", value: "custom" },
+                        ]}
+                        value={bannerWidth}
+                        onChange={setBannerWidth}
+                      />
+
+                      {bannerWidth === "custom" && (
+                        <TextField
+                          label="Custom Width (vw)"
+                          name="customWidth"
+                          value={customWidth}
+                          onChange={setCustomWidth}
+                          placeholder="80"
+                          autoComplete="off"
+                          helpText="Enter width in viewport width units (e.g., 80 for 80vw)"
+                        />
+                      )}
+
+                      <Select
+                        label="Banner Height"
+                        name="bannerHeight"
+                        options={[
+                          { label: "Auto", value: "auto" },
+                          { label: "Custom (px)", value: "custom" },
+                        ]}
+                        value={bannerHeight}
+                        onChange={setBannerHeight}
+                      />
+
+                      {bannerHeight === "custom" && (
+                        <TextField
+                          label="Custom Height (px)"
+                          name="customHeight"
+                          value={customHeight}
+                          onChange={setCustomHeight}
+                          placeholder="60"
+                          autoComplete="off"
+                        />
+                      )}
+
+                      <TextField
+                        label="Banner Padding (px)"
+                        type="number"
+                        name="bannerPadding"
+                        value={bannerPadding}
+                        onChange={setBannerPadding}
+                        autoComplete="off"
+                      />
+
+                      <InlineStack gap="200">
+                        <TextField
+                          label="Top Margin (px)"
+                          type="number"
+                          name="bannerTopMargin"
+                          value={bannerTopMargin}
+                          onChange={setBannerTopMargin}
+                          autoComplete="off"
+                        />
+                        <TextField
+                          label="Bottom Margin (px)"
+                          type="number"
+                          name="bannerBottomMargin"
+                          value={bannerBottomMargin}
+                          onChange={setBannerBottomMargin}
+                          autoComplete="off"
+                        />
+                      </InlineStack>
+
+                      <InlineStack gap="200">
+                        <TextField
+                          label="Left Margin (px)"
+                          type="number"
+                          name="bannerLeftMargin"
+                          value={bannerLeftMargin}
+                          onChange={setBannerLeftMargin}
+                          autoComplete="off"
+                        />
+                        <TextField
+                          label="Right Margin (px)"
+                          type="number"
+                          name="bannerRightMargin"
+                          value={bannerRightMargin}
+                          onChange={setBannerRightMargin}
+                          autoComplete="off"
+                        />
+                      </InlineStack>
+
+                      <TextField 
+                        label="Border Radius (px)"
+                        type="number"
+                        name="bannerBorderRadius"
+                        value={bannerBorderRadius}
+                        onChange={setBannerBorderRadius}
+                        autoComplete="off"
+                        helpText="Rounded corners for the banner"
+                      />
+                    </BlockStack>
+                  </Card>
+
+                  {/* Global Timer Styling */}
                   <Card>
                     <BlockStack gap="300">
                       <Text as="h3" variant="headingMd">
@@ -823,11 +1068,11 @@ export default function EditBottomBannerPage() {
                     </BlockStack>
                   </Card>
 
-                  {/* Product Styling */}
+                  {/* Global Product/Button Styling */}
                   <Card>
                     <BlockStack gap="300">
                       <Text as="h3" variant="headingMd">
-                        Product Styling
+                        Global Product/Button Styling
                       </Text>
                       <TextField
                         label="Product Font Size (px)"
@@ -837,15 +1082,8 @@ export default function EditBottomBannerPage() {
                         onChange={setProductFontSize}
                         autoComplete="off"
                       />
-                    </BlockStack>
-                  </Card>
-
-                  {/* Button Styling */}
-                  <Card>
-                    <BlockStack gap="300">
-                      <Text as="h3" variant="headingMd">
-                        Button Styling
-                      </Text>
+                      
+                      <Text as="h4" variant="headingSm">Add to Cart Button Styling</Text>
                       <TextField
                         label="Add to Cart Button Text Color"
                         name="addToCartButtonTextColor"
@@ -860,6 +1098,8 @@ export default function EditBottomBannerPage() {
                         onChange={setAddToCartButtonBackgroundColor}
                         autoComplete="off"
                       />
+
+                      <Text as="h4" variant="headingSm">View Product Button Styling</Text>
                       <TextField
                         label="View Product Button Text Color"
                         name="viewProductButtonTextColor"
@@ -874,6 +1114,7 @@ export default function EditBottomBannerPage() {
                         onChange={setViewProductButtonBackgroundColor}
                         autoComplete="off"
                       />
+
                       <TextField
                         label="Button Border Radius (px)"
                         type="number"
@@ -893,46 +1134,13 @@ export default function EditBottomBannerPage() {
                     </BlockStack>
                   </Card>
 
-                  {/* Banner Layout */}
-                  <Card>
-                    <BlockStack gap="300">
-                      <Text as="h3" variant="headingMd">
-                        Banner Layout & Positioning
-                      </Text>
-                      <TextField
-                        label="Banner Padding (px)"
-                        type="number"
-                        name="bannerPadding"
-                        value={bannerPadding}
-                        onChange={setBannerPadding}
-                        autoComplete="off"
-                      />
-                      <TextField
-                        label="Banner Border Radius (px)"
-                        type="number"
-                        name="bannerBorderRadius"
-                        value={bannerBorderRadius}
-                        onChange={setBannerBorderRadius}
-                        autoComplete="off"
-                      />
-                      <TextField
-                        label="Priority"
-                        type="number"
-                        name="priority"
-                        value={priority}
-                        onChange={setPriority}
-                        autoComplete="off"
-                        helpText="Higher numbers appear first"
-                      />
-                    </BlockStack>
-                  </Card>
-
                   {/* Background */}
                   <Card>
                     <BlockStack gap="300">
                       <Text as="h3" variant="headingMd">
                         Background
                       </Text>
+
                       <TextField
                         label="Background Color"
                         name="bgColor"
@@ -946,14 +1154,18 @@ export default function EditBottomBannerPage() {
 
                   <Divider />
 
-                  <InlineStack align="end">
+                  {/* Submit Button */}
+                  <InlineStack gap="200">
                     <Button 
-                      variant="primary" 
                       submit 
-                      loading={isSubmitting}
+                      variant="primary" 
+                      loading={isSubmitting || isRedirecting}
                       disabled={isSubmitting || isRedirecting}
                     >
-                      {isSubmitting ? "Updating..." : "Update Bottom Banner"}
+                      {isSubmitting ? "Updating Bottom Banner..." : isRedirecting ? "Redirecting..." : "Update Bottom Banner"}
+                    </Button>
+                    <Button url="/app/manage-bottom-banners" disabled={isSubmitting || isRedirecting}>
+                      Cancel
                     </Button>
                   </InlineStack>
                 </BlockStack>

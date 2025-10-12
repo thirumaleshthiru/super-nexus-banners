@@ -255,6 +255,41 @@
     margin: 0;
   }
   
+  .close-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: #666;
+    transition: all 0.2s ease;
+    z-index: 10;
+  }
+  
+  /* Show close button only on mobile */
+  @media (max-width: 768px) {
+    .close-button {
+      display: flex;
+    }
+  }
+  
+  .close-button:hover {
+    background: rgba(0, 0, 0, 0.2);
+    color: #333;
+  }
+  
+  .close-button:active {
+    transform: scale(0.95);
+  }
+  
   /* Responsive design */
   @media (max-width: 768px) {
     body {
@@ -571,6 +606,35 @@
         }
       },
       
+      async handleBuyNow(slide) {
+        if (this.loading) return;
+
+        const variantId = slide.productVariantId || this.bottomBanner.productVariantId;
+        if (!variantId) {
+          alert('Product variant not available. Please select a variant.');
+          return;
+        }
+
+        this.loading = true;
+
+        try {
+          await addToCart(variantId);
+          await trackEvent(this.bottomBanner.id, 'buy_now', slide.productId || this.bottomBanner.productId);
+
+          // Redirect to checkout after adding to cart
+          window.location.href = '/checkout';
+        } catch (error) {
+          // Show specific error message
+          if (error.message.includes('sold out')) {
+            alert('This product is currently sold out. Please try another product.');
+          } else {
+            alert('Failed to proceed to checkout. Please try again.');
+          }
+        } finally {
+          this.loading = false;
+        }
+      },
+      
       handleViewProduct(slide) {
         const handle = slide.productHandle || this.bottomBanner.productHandle;
         if (!handle) {
@@ -613,17 +677,38 @@
       },
       
       showCopiedFeedback() {
-        // Find all coupon code elements and temporarily change their text
-        const couponCodes = document.querySelectorAll('.coupon-code');
-        couponCodes.forEach(element => {
-          const originalText = element.textContent;
-          element.textContent = '✓ Copied!';
-          element.style.color = '#059669'; // Green color for success
+        // Clear any existing timeout
+        if (this._copyTimeout) {
+          clearTimeout(this._copyTimeout);
+        }
+        
+        // First, restore any badges that might be stuck
+        this.restoreCouponBadges();
+        
+        // Find all coupon badges and temporarily change their content
+        const couponBadges = document.querySelectorAll('.coupon-badge');
+        couponBadges.forEach(badge => {
+          const originalHTML = badge.innerHTML;
+          badge.innerHTML = '<span style="color: #059669; font-weight: 700;">✓ Copied!</span>';
           
-          setTimeout(() => {
-            element.textContent = originalText;
-            element.style.color = '#b45309'; // Back to original color
-          }, 1500);
+          // Store original HTML on the badge for restoration
+          badge._originalHTML = originalHTML;
+        });
+        
+        // Set a single timeout to restore all badges
+        this._copyTimeout = setTimeout(() => {
+          this.restoreCouponBadges();
+          this._copyTimeout = null;
+        }, 1500);
+      },
+      
+      restoreCouponBadges() {
+        const couponBadges = document.querySelectorAll('.coupon-badge');
+        couponBadges.forEach(badge => {
+          if (badge._originalHTML) {
+            badge.innerHTML = badge._originalHTML;
+            delete badge._originalHTML;
+          }
         });
       },
       
@@ -691,6 +776,14 @@
             :style="getContainerStyle()"
             class="bottom-banner-transition bottom-banner-inner-container"
           >
+            <!-- Close Button - Mobile Only -->
+            <button 
+              class="close-button"
+              @click="closed = true"
+              title="Close banner"
+            >
+              ×
+            </button>
             <div class="bottom-banner-slides-wrapper">
               <div class="bottom-banner-slides-container" :style="'transform: ' + getSlideTransform()">
                 
@@ -769,8 +862,20 @@
                         </template>
                         
                         <!-- Buttons -->
-                        <template x-if="slide.hasProduct && (slide.showAddToCartButton || slide.showViewProductButton)">
+                        <template x-if="slide.hasProduct && (slide.showAddToCartButton || slide.showViewProductButton || slide.actionType === 'buy_now')">
                           <div class="banner-item banner-buttons">
+                            
+                            <template x-if="slide.actionType === 'buy_now'">
+                              <button
+                                @click="handleBuyNow(slide)"
+                                :disabled="loading"
+                                class="btn"
+                                :style="'background: ' + (slide.actionButtonBackgroundColor || bottomBanner.actionButtonBackgroundColor) + '; color: ' + (slide.actionButtonTextColor || bottomBanner.actionButtonTextColor) + '; border-radius: ' + (bottomBanner.actionButtonBorderRadius) + 'px; padding: ' + (bottomBanner.actionButtonPadding) + 'px ' + (bottomBanner.actionButtonPadding * 1.5) + 'px; font-size: ' + (bottomBanner.productFontSize) + 'px; font-weight: 600; border: none; cursor: pointer; transition: opacity 0.2s ease'"
+                              >
+                                <span x-show="!loading" x-text="slide.actionButtonText || 'Buy Now'"></span>
+                                <span x-show="loading" class="loading-text">Processing...</span>
+                              </button>
+                            </template>
                             
                             <template x-if="slide.showAddToCartButton">
                               <button
