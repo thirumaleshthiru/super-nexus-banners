@@ -208,7 +208,8 @@
     display: flex;
     align-items: center;
     border-radius: 4px;
-    border: 1px solid #d1d5db;
+    background: transparent !important;
+    border: none !important;
   }
   
   .timer-text {
@@ -854,7 +855,7 @@
                           <div class="banner-item timer-section">
                             <div 
                               class="timer-container"
-                              :style="'background: ' + (bottomBanner.timerBackgroundColor) + '; border: 1px solid ' + (bottomBanner.timerBorderColor) + '; color: ' + (bottomBanner.timerTextColor) + '; font-size: ' + (bottomBanner.timerFontSize) + 'px; padding: ' + (bottomBanner.timerPadding) + 'px'"
+                              :style="'color: ' + (bottomBanner.timerTextColor) + '; font-size: ' + (bottomBanner.timerFontSize) + 'px; padding: ' + (bottomBanner.timerPadding) + 'px'"
                             >
                               <div class="timer-text" x-text="timers[index]?.formatted || 'Loading...'"></div>
                             </div>

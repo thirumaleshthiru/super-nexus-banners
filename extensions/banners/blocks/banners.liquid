@@ -1,6 +1,6 @@
 {% comment %}
-  Professional Banner System v2.3
-  Fixed: Cart functionality, smooth horizontal sliding, removed navigation dots
+  Professional Banner System v2.5
+  Fixed: Timer layout with robust horizontal display
 {% endcomment %}
 
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -51,9 +51,44 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  .timer-segment {
-    min-width: 2.5rem;
-    text-align: center;
+  /* Timer Display - Horizontal Layout with Maximum Specificity */
+  .banner-container .timer-display {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: baseline !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+  }
+  
+  .banner-container .timer-segment {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: baseline !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+  
+  .banner-container .timer-value {
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+    white-space: nowrap !important;
+    vertical-align: baseline !important;
+  }
+  
+  .banner-container .timer-sup {
+    display: inline-block !important;
+    vertical-align: super !important;
+    opacity: 0.9 !important;
+    font-weight: 500 !important;
+    line-height: 0 !important;
+    margin-left: 2px !important;
+    white-space: nowrap !important;
+    position: relative !important;
+    top: -0.5em !important;
   }
   
   .product-image-wrapper {
@@ -69,7 +104,6 @@
   .product-image-wrapper:hover img {
     transform: scale(1.05);
   }
-  
   
   .banner-inner-container {
     position: relative;
@@ -87,6 +121,10 @@
     .banner-content > button {
       width: auto !important;
       justify-content: center !important;
+    }
+    
+    .banner-container .timer-display {
+      gap: 8px !important;
     }
   }
 </style>
@@ -170,13 +208,23 @@
     };
   }
   
-  function formatTimer(time) {
-    const parts = [];
-    if (time.days > 0) parts.push(`${time.days}d`);
-    if (time.hours > 0) parts.push(`${time.hours}h`);
-    if (time.minutes > 0) parts.push(`${time.minutes}m`);
-    parts.push(`${time.seconds}s`);
-    return parts.join(' ');
+  function formatTimerHTML(time, fontSize = 16) {
+    const labelSize = Math.max(8, Math.round(fontSize * 0.5));
+    const segments = [];
+    
+    if (time.days > 0) {
+      segments.push(`<span class="timer-segment"><span class="timer-value" style="font-size:${fontSize}px">${time.days}</span><sup class="timer-sup" style="font-size:${labelSize}px">DAYS</sup></span>`);
+    }
+    
+    if (time.hours > 0 || time.days > 0) {
+      segments.push(`<span class="timer-segment"><span class="timer-value" style="font-size:${fontSize}px">${time.hours}</span><sup class="timer-sup" style="font-size:${labelSize}px">HRS</sup></span>`);
+    }
+    
+    segments.push(`<span class="timer-segment"><span class="timer-value" style="font-size:${fontSize}px">${time.minutes}</span><sup class="timer-sup" style="font-size:${labelSize}px">MIN</sup></span>`);
+    
+    segments.push(`<span class="timer-segment"><span class="timer-value" style="font-size:${fontSize}px">${time.seconds}</span><sup class="timer-sup" style="font-size:${labelSize}px">SEC</sup></span>`);
+    
+    return segments.join('');
   }
   
   async function addToCart(variantId, quantity = 1) {
@@ -254,7 +302,11 @@
       initTimer(key, endTime) {
         const updateTimer = () => {
           const time = calculateTimeRemaining(endTime);
-          this.timers[key] = { ...time, formatted: formatTimer(time) };
+          const fontSize = this.banner.timerFontSize || 16;
+          this.timers[key] = { 
+            ...time, 
+            html: formatTimerHTML(time, fontSize)
+          };
           
           if (time.expired) {
             if (this.timers[key].interval) {
@@ -458,10 +510,10 @@
                         
                         <template x-if="slide.isTimer && slide.endTime">
                           <div 
-                            class="timer-display px-4 py-2 rounded-full backdrop-blur-sm flex-shrink-0"
-                            :style="'background: ' + (banner.timerBackgroundColor) + '; border: 1px solid ' + (banner.timerBorderColor) + '; color: ' + (banner.timerTextColor) + '; font-size: ' + (banner.timerFontSize) + 'px; padding: ' + (banner.timerPadding) + 'px'"
+                            class="timer-display"
+                            :style="'color: ' + (banner.timerTextColor || banner.messageColor) + '; padding: ' + (banner.timerPadding || 0) + 'px'"
+                            x-html="timers[index]?.html || 'Loading...'"
                           >
-                            <span x-text="timers[index]?.formatted || 'Loading...'"></span>
                           </div>
                         </template>
                         

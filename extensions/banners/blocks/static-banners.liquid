@@ -1,5 +1,5 @@
 {% comment %}
-  Professional Static Banner System v1.0
+  Professional Static Banner System v2.0
   Static positioning - can be placed anywhere in theme
   Responsive design with column layout on mobile
 {% endcomment %}
@@ -15,6 +15,8 @@
     margin: 0 !important;
     box-sizing: border-box !important;
     transform: none !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    pointer-events: auto !important;
   }
   
   .static-banner-wrapper .static-banner-container {
@@ -22,14 +24,6 @@
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
-  }
-  
-  .static-banner-wrapper {
-    position: relative !important;
-    width: 100% !important;
-    margin: 0 !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    pointer-events: auto !important;
   }
   
   [x-cloak] { display: none !important; }
@@ -58,11 +52,6 @@
   
   .static-banner-transition {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .timer-segment {
-    min-width: 2.5rem;
-    text-align: center;
   }
   
   .static-banner-inner-container {
@@ -124,11 +113,28 @@
   .timer-container {
     display: flex;
     align-items: center;
+    gap: 12px;
   }
   
-  .timer-text {
-    font-weight: 600;
-    font-family: monospace;
+  .timer-segment {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+  }
+  
+  .timer-value {
+    font-weight: 700;
+    font-size: 1.5em;
+    line-height: 1;
+  }
+  
+  .timer-label {
+    font-weight: 400;
+    font-size: 0.7em;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-top: 2px;
   }
   
   .simple-message {
@@ -193,8 +199,8 @@
       padding: 8px 16px;
     }
     
-    .timer-container {
-      padding: 8px 16px;
+    .timer-segment {
+      min-width: 40px;
     }
   }
   
@@ -211,8 +217,12 @@
       padding: 6px 12px;
     }
     
-    .timer-container {
-      padding: 6px 12px;
+    .timer-segment {
+      min-width: 35px;
+    }
+    
+    .timer-value {
+      font-size: 1.2em;
     }
   }
 </style>
@@ -295,15 +305,6 @@
     };
   }
   
-  function formatTimer(time) {
-    const parts = [];
-    if (time.days > 0) parts.push(`${time.days}d`);
-    if (time.hours > 0) parts.push(`${time.hours}h`);
-    if (time.minutes > 0) parts.push(`${time.minutes}m`);
-    parts.push(`${time.seconds}s`);
-    return parts.join(' ');
-  }
-  
   function staticBannerComponent(staticBannerData) {
     return {
       staticBanner: staticBannerData,
@@ -341,7 +342,7 @@
       initTimer(key, endTime) {
         const updateTimer = () => {
           const time = calculateTimeRemaining(endTime);
-          this.timers[key] = { ...time, formatted: formatTimer(time) };
+          this.timers[key] = { ...time };
           
           if (time.expired) {
             if (this.timers[key].interval) {
@@ -418,25 +419,19 @@
       },
       
       showCopiedFeedback() {
-        // Clear any existing timeout
         if (this._copyTimeout) {
           clearTimeout(this._copyTimeout);
         }
         
-        // First, restore any badges that might be stuck
         this.restoreCouponBadges();
         
-        // Find all coupon badges and temporarily change their content
         const couponBadges = document.querySelectorAll('.coupon-badge');
         couponBadges.forEach(badge => {
           const originalHTML = badge.innerHTML;
           badge.innerHTML = '<span style="color: #059669; font-weight: 700;">✓ Copied!</span>';
-          
-          // Store original HTML on the badge for restoration
           badge._originalHTML = originalHTML;
         });
         
-        // Set a single timeout to restore all badges
         this._copyTimeout = setTimeout(() => {
           this.restoreCouponBadges();
           this._copyTimeout = null;
@@ -500,6 +495,10 @@
       
       getSlideTransform() {
         return `translateX(-${this.currentSlideIndex * 100}%)`;
+      },
+      
+      formatTimerValue(value) {
+        return value.toString().padStart(2, '0');
       }
     };
   }
@@ -554,9 +553,30 @@
                           <div class="banner-item timer-section">
                             <div 
                               class="timer-container"
-                              :style="'background: ' + (staticBanner.timerBackgroundColor) + '; border: 1px solid ' + (staticBanner.timerBorderColor) + '; color: ' + (staticBanner.timerTextColor) + '; font-size: ' + (staticBanner.timerFontSize) + 'px; padding: ' + (staticBanner.timerPadding) + 'px'"
+                              :style="'color: ' + (staticBanner.timerTextColor) + '; font-size: ' + (staticBanner.timerFontSize) + 'px'"
                             >
-                              <div class="timer-text" x-text="timers[index]?.formatted || 'Loading...'"></div>
+                              <template x-if="timers[index]">
+                                <template x-if="timers[index].days > 0">
+                                  <div class="timer-segment">
+                                    <div class="timer-value" x-text="formatTimerValue(timers[index].days)"></div>
+                                    <div class="timer-label">HRS</div>
+                                  </div>
+                                </template>
+                              </template>
+                              
+                              <template x-if="timers[index]">
+                                <div class="timer-segment">
+                                  <div class="timer-value" x-text="formatTimerValue(timers[index].hours)"></div>
+                                  <div class="timer-label">MIN</div>
+                                </div>
+                              </template>
+                              
+                              <template x-if="timers[index]">
+                                <div class="timer-segment">
+                                  <div class="timer-value" x-text="formatTimerValue(timers[index].minutes)"></div>
+                                  <div class="timer-label">SEC</div>
+                                </div>
+                              </template>
                             </div>
                           </div>
                         </template>
@@ -608,7 +628,7 @@
       
       if (staticBanners.length === 0) {
         console.log('No static banners found');
-        return; // Don't show anything if no static banners
+        return;
       }
       
       staticBanners.sort((a, b) => (a.priority || 0) - (b.priority || 0));
@@ -616,12 +636,10 @@
       const staticBannersHTML = staticBanners.map(renderStaticBanner).join('');
       console.log('Generated HTML:', staticBannersHTML);
       
-      // Render directly into the root element where the block is placed
       rootElement.innerHTML = staticBannersHTML;
       console.log('HTML inserted into root element');
       
     } catch (error) {
-      // Static banner initialization error - fail silently
       console.log('Static banner initialization failed:', error);
     }
   }

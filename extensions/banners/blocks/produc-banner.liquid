@@ -1,0 +1,652 @@
+{% comment %}
+  Professional Product Banner System v4.0
+  Matches Shopify theme alignment and styling perfectly
+{% endcomment %}
+
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+<style>
+  /* Reset and base styles */
+  #product-banner-spacer {
+    height: 85px;
+    width: 100%;
+  }
+  
+  /* Enhanced inventory banner - more highlighted */
+  .inventory-banner {
+    position: fixed;
+    bottom: 85px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000000;
+    background: #000;
+    color: white;
+    text-align: center;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 6px;
+    animation: slideUp 0.3s ease-out;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border: 2px solid #fff;
+  }
+  
+  .inventory-banner .inventory-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  
+  .inventory-banner .inventory-number {
+    background: #fff;
+    color: #000;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 900;
+    font-size: 16px;
+    margin: 0 2px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  
+  @keyframes slideUp {
+    from {
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+  }
+  
+  /* Mobile responsive design for inventory banner */
+  @media (max-width: 768px) {
+    .inventory-banner {
+      bottom: 140px;
+      padding: 8px 16px;
+      font-size: 14px;
+      z-index: 1000001;
+      left: 10px;
+      right: 10px;
+      transform: none;
+      width: auto;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .inventory-banner {
+      bottom: 150px;
+      padding: 7px 14px;
+      font-size: 13px;
+      z-index: 1000001;
+      left: 8px;
+      right: 8px;
+      transform: none;
+      width: auto;
+    }
+  }
+  
+  .product-banner-fixed-wrapper {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 999999 !important;
+    background: #ffffff;
+  
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+  }
+  
+  .product-banner-container {
+    max-width: var(--theme-max-width, 1400px);
+    margin: 0 auto;
+    padding: 12px var(--theme-padding, 10px);
+    box-sizing: border-box;
+  }
+  
+  [x-cloak] { display: none !important; }
+  
+  .product-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  
+  .product-banner-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .product-banner-image {
+    width: 75px;
+    height: 75px;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f9fafb;
+    }
+  
+  .product-banner-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .product-banner-info {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .product-banner-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.4;
+    margin: 0 0 2px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .product-banner-price {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+  }
+  
+  .product-banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  
+  .product-banner-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  
+  .product-banner-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .product-banner-btn-cart {
+    background: #000000;
+    color: #ffffff;
+    border: 2px solid #000000;
+  }
+  
+  .product-banner-btn-cart:hover:not(:disabled) {
+    background: #1f2937;
+    border-color: #1f2937;
+  }
+  
+  .product-banner-btn-buy {
+    background: #ffffff;
+    color: #000000;
+    border: 2px solid #000000;
+  }
+  
+  .product-banner-btn-buy:hover:not(:disabled) {
+    background: #000000;
+    color: #ffffff;
+  }
+  
+  .product-banner-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #ffffff;
+    animation: pb-spin 0.6s linear infinite;
+    margin-right: 6px;
+  }
+  
+  .product-banner-btn-buy .product-banner-spinner {
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    border-top-color: #000000;
+  }
+  
+  @keyframes pb-spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .product-banner-close {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+    padding: 4px;
+    z-index: 10;
+  }
+  
+  .product-banner-close:hover {
+    color: #4b5563;
+  }
+  
+  /* Tablet styles */
+  @media (max-width: 1024px) {
+    .product-banner-container {
+      padding: 16px var(--theme-padding, 16px);
+    }
+    
+    .product-banner-content {
+      gap: 16px;
+    }
+    
+    .product-banner-btn {
+      padding: 10px 20px;
+      font-size: 13px;
+    }
+  }
+  
+  /* Mobile styles */
+  @media (max-width: 768px) {
+    #product-banner-spacer {
+      height: 120px;
+    }
+    
+    .product-banner-fixed-wrapper {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 999999 !important;
+    }
+    
+    .product-banner-container {
+      padding: 14px;
+      position: relative;
+    }
+    
+    .product-banner-content {
+      flex-direction: column;
+      gap: 14px;
+      align-items: stretch;
+    }
+    
+    .product-banner-left {
+      width: 100%;
+    }
+    
+    .product-banner-title {
+      white-space: normal;
+      overflow: visible;
+    }
+    
+    .product-banner-actions {
+      width: 100%;
+      gap: 10px;
+    }
+    
+    .product-banner-btn {
+      flex: 1;
+      padding: 11px 16px;
+      font-size: 13px;
+    }
+    
+    .product-banner-close {
+      display: block;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .product-banner-image {
+      width: 55px;
+      height: 55px;
+    }
+    
+    .product-banner-title {
+      font-size: 14px;
+    }
+    
+    .product-banner-price {
+      font-size: 13px;
+    }
+    
+    .product-banner-btn {
+      font-size: 12px;
+      padding: 10px 14px;
+    }
+  }
+</style>
+
+<div id="product-banner-root"></div>
+
+<script>
+(function() {
+  'use strict';
+  
+  const CONFIG = {
+    API_ENDPOINT: '/apps/banners-1/activeproductbanners',
+    TIMEOUT: 5000,
+    THEME_SELECTORS: [
+      '.page-width',
+      '.container',
+      'main > .container',
+      '.main-content',
+      '#MainContent',
+      '.shopify-section .container',
+      '.site-width',
+      'main',
+      '[class*="page-width"]',
+      '[class*="container"]'
+    ]
+  };
+  
+  function extractThemeStyles() {
+    for (const selector of CONFIG.THEME_SELECTORS) {
+      const element = document.querySelector(selector);
+      if (!element) continue;
+      
+      const styles = window.getComputedStyle(element);
+      const maxWidth = styles.maxWidth;
+      const paddingLeft = styles.paddingLeft;
+      const paddingRight = styles.paddingRight;
+      
+      if (maxWidth && maxWidth !== 'none') {
+        console.log('Theme styles detected:', { selector, maxWidth, paddingLeft, paddingRight });
+        return {
+          maxWidth,
+          padding: paddingLeft
+        };
+      }
+    }
+    
+    return { maxWidth: '1400px', padding: '20px' };
+  }
+  
+  function applyThemeStyles(container) {
+    const themeStyles = extractThemeStyles();
+    document.documentElement.style.setProperty('--theme-max-width', themeStyles.maxWidth);
+    document.documentElement.style.setProperty('--theme-padding', themeStyles.padding);
+  }
+  
+  function getCurrentProductHandle() {
+    const metaOgUrl = document.querySelector('meta[property="og:url"]');
+    if (metaOgUrl) {
+      const match = metaOgUrl.content.match(/\/products\/([^/?#]+)/);
+      if (match) return match[1];
+    }
+    
+    const pathMatch = window.location.pathname.match(/\/products\/([^/?#]+)/);
+    if (pathMatch) return pathMatch[1];
+    
+    if (window.ShopifyAnalytics?.meta?.product?.handle) {
+      return window.ShopifyAnalytics.meta.product.handle;
+    }
+    
+    return null;
+  }
+  
+  async function fetchBannerData(handle) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
+    
+    try {
+      const response = await fetch(
+        `${CONFIG.API_ENDPOINT}?handle=${encodeURIComponent(handle)}`,
+        {
+          signal: controller.signal,
+          headers: { 'Accept': 'application/json' }
+        }
+      );
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error('Failed to fetch banner data');
+      
+      return await response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
+  }
+  
+  async function addToCart(variantId, quantity = 1) {
+    const formData = new FormData();
+    formData.append('id', String(variantId));
+    formData.append('quantity', String(quantity));
+    
+    const response = await fetch('/cart/add.js', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const text = await response.text();
+      if (text.includes('sold out') || text.includes('unavailable')) {
+        throw new Error('Product is currently unavailable');
+      }
+      throw new Error('Failed to add to cart');
+    }
+    
+    const data = await response.json();
+    
+    if (window.Shopify?.onCartUpdate) {
+      window.Shopify.onCartUpdate(data);
+    }
+    
+    document.dispatchEvent(new CustomEvent('cart:updated', { detail: data }));
+    
+    return data;
+  }
+  
+  function createBannerComponent(product) {
+    return {
+      product,
+      cartLoading: false,
+      buyLoading: false,
+      closed: false,
+      
+      get inventoryMessage() {
+        if (!this.product.shouldShowLowStock) return '';
+        const quantity = this.product.inventoryQuantity;
+        if (quantity === 1) return 'Only <span class="inventory-number">1</span> left in stock!';
+        return `Only <span class="inventory-number">${quantity}</span> left in stock!`;
+      },
+      
+      async handleAddToCart() {
+        if (this.cartLoading || this.buyLoading || !this.product.variantId) return;
+        
+        this.cartLoading = true;
+        
+        try {
+          await addToCart(this.product.variantId);
+          
+          // Refresh the page after successful cart addition
+          window.location.reload();
+          
+        } catch (error) {
+          alert(error.message);
+          this.cartLoading = false;
+        }
+      },
+      
+      async handleBuyNow() {
+        if (this.cartLoading || this.buyLoading || !this.product.variantId) return;
+        
+        this.buyLoading = true;
+        
+        try {
+          await addToCart(this.product.variantId);
+          window.location.href = '/checkout';
+        } catch (error) {
+          alert(error.message);
+          this.buyLoading = false;
+        }
+      },
+      
+      close() {
+        this.closed = true;
+        // Also hide the inventory banner when product banner is closed
+        const inventoryBanner = document.querySelector('.inventory-banner');
+        if (inventoryBanner) {
+          inventoryBanner.style.display = 'none';
+        }
+      },
+      
+    };
+  }
+  
+  function renderBanner(product) {
+    const price = product.price ? `₹ ${product.price}` : '';
+    
+    return `
+      <div 
+        x-data="createBannerComponent(${JSON.stringify(product).replace(/"/g, '&quot;')})"
+        x-init=""
+      >
+        <!-- Top Inventory Banner -->
+        <div 
+          x-show="product.shouldShowLowStock"
+          x-cloak
+          class="inventory-banner"
+        >
+          <div class="inventory-text" x-html="inventoryMessage">
+          </div>
+        </div>
+        
+        <!-- Bottom Product Banner -->
+        <div id="product-banner-spacer"></div>
+        <div class="product-banner-fixed-wrapper">
+          <div x-show="!closed" x-cloak>
+            <div class="product-banner-container">
+              <button 
+                class="product-banner-close"
+                @click="close()"
+                aria-label="Close banner"
+              >&times;</button>
+              
+              <div class="product-banner-content">
+                <div class="product-banner-left">
+                  <div class="product-banner-image">
+                    <img 
+                      :src="product.featuredImage || 'https://via.placeholder.com/60'" 
+                      :alt="product.title"
+                      @error="$el.src='https://via.placeholder.com/60'"
+                    />
+                  </div>
+                  
+                  <div class="product-banner-info">
+                    <h3 class="product-banner-title" x-text="product.title"></h3>
+                    ${price ? `<p class="product-banner-price">${price}</p>` : ''}
+                  </div>
+                </div>
+                
+                <div class="product-banner-actions">
+                  <button
+                    @click="handleAddToCart()"
+                    :disabled="cartLoading || buyLoading"
+                    class="product-banner-btn product-banner-btn-cart"
+                  >
+                    <span x-show="cartLoading" class="product-banner-spinner"></span>
+                    <span x-text="cartLoading ? 'Adding...' : 'Add to Cart'"></span>
+                  </button>
+                  
+                  <button
+                    @click="handleBuyNow()"
+                    :disabled="cartLoading || buyLoading"
+                    class="product-banner-btn product-banner-btn-buy"
+                  >
+                    <span x-show="buyLoading" class="product-banner-spinner"></span>
+                    <span x-text="buyLoading ? 'Processing...' : 'Buy Now'"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  async function init() {
+    try {
+      const handle = getCurrentProductHandle();
+      
+      if (!handle) {
+        console.log('Not a product page');
+        return;
+      }
+      
+      const data = await fetchBannerData(handle);
+      
+      if (!data.product) {
+        console.log('No banner configured for this product');
+        return;
+      }
+      
+      applyThemeStyles();
+      
+      const container = document.createElement('div');
+      container.innerHTML = renderBanner(data.product);
+      document.body.appendChild(container);
+      
+      console.log('Product banner loaded successfully');
+      
+    } catch (error) {
+      console.error('Banner initialization failed:', error);
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+  window.createBannerComponent = createBannerComponent;
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Product Banner",
+  "target": "section",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Professional product banner that matches your theme styling. Automatically appears on product pages."
+    }
+  ]
+}
+{% endschema %}

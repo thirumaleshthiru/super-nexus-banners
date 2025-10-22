@@ -44,6 +44,9 @@ model Product {
   tags               String?
   variantId          String?
   variants           String?  // JSON string of all variants
+  inventoryQuantity  Int?     // Total inventory quantity
+  inventoryTracked   Boolean  @default(true) // Whether to track inventory
+  lowStockThreshold  Int      @default(5) // Show banner when stock is below this
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   banners            Banner[]
