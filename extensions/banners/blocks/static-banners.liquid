@@ -1,37 +1,20 @@
 {% comment %}
-  Professional Static Banner System v2.0
-  Static positioning - can be placed anywhere in theme
-  Responsive design with column layout on mobile
+  Static Banner System - Optimized
 {% endcomment %}
 
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
 <style>
-  /* Override any theme styles that might interfere */
   .static-banner-wrapper {
-    position: relative !important;
-    width: 100% !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    transform: none !important;
+    position: relative;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    pointer-events: auto !important;
-  }
-  
-  .static-banner-wrapper .static-banner-container {
-    position: relative !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
   }
   
   [x-cloak] { display: none !important; }
   
-  .static-banner-container * {
-    font-family: inherit !important;
-  }
-  
-  /* Smooth horizontal slide animation */
   .static-banner-slides-wrapper {
     position: relative;
     overflow: hidden;
@@ -40,8 +23,7 @@
   
   .static-banner-slides-container {
     display: flex;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform;
+    transition: transform 0.6s ease;
   }
   
   .static-banner-slide {
@@ -49,179 +31,95 @@
     width: 100%;
   }
   
-  .static-banner-transition {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .static-banner-inner-container {
-    position: relative;
-  }
-  
-  /* Column Layout - Mobile First */
   .static-banner-content {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    gap: 16px;
-  }
-  
-  .banner-item {
-    display: flex;
     align-items: center;
-    width: 100%;
-    justify-content: flex-start;
+    justify-content: space-between;
+    padding: 12px 16px;
+    min-height: 50px;
   }
   
-  .banner-message {
-    width: 100%;
-    text-align: left;
-  }
-  
-  .coupon-section {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-  }
-  
-  .coupon-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    position: relative;
-  }
-  
-  .coupon-label {
-    font-weight: 600;
-  }
-  
-  .coupon-code {
-    font-family: monospace;
-    font-weight: 700;
-  }
-  
-  .timer-section {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-  }
-  
-  .timer-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .timer-segment {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 50px;
-  }
-  
-  .timer-value {
-    font-weight: 700;
-    font-size: 1.5em;
-    line-height: 1;
-  }
-  
-  .timer-label {
-    font-weight: 400;
-    font-size: 0.7em;
-    text-transform: uppercase;
-    opacity: 0.8;
-    margin-top: 2px;
-  }
-  
-  .simple-message {
-    text-align: left;
-    width: 100%;
-  }
-  
-  .simple-message p {
+  .static-banner-message {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a1a;
     margin: 0;
   }
   
-  /* Desktop Layout - Horizontal */
-  @media (min-width: 769px) {
-    .static-banner-content {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-    }
-    
-    .banner-item {
-      flex: 1;
-      justify-content: center;
-      min-width: 0;
-    }
-    
-    .banner-message {
-      flex: 1.5;
-      text-align: center;
-    }
-    
-    .coupon-section {
-      flex: 0.8;
-      justify-content: center;
-    }
-    
-    .timer-section {
-      flex: 0.8;
-      justify-content: center;
-    }
-    
-    .simple-message {
-      text-align: center;
-    }
+  .static-banner-timer {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0,0,0,0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a1a1a;
   }
   
-  /* Mobile Responsive */
+  .static-banner-coupon {
+    display: inline-flex;
+    align-items: center;
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  
+  .static-banner-close {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    margin-left: 8px;
+  }
+  
+  .static-banner-close:hover {
+    color: #4b5563;
+  }
+  
+  .static-banner-dots {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px;
+  }
+  
+  .static-banner-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #d1d5db;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .static-banner-dot.active {
+    background: #6b7280;
+  }
+  
   @media (max-width: 768px) {
     .static-banner-content {
       flex-direction: column;
-      gap: 12px;
-      padding: 16px;
-    }
-    
-    .banner-item {
-      flex-direction: column;
-      text-align: left;
       gap: 8px;
+      text-align: center;
     }
     
-    .coupon-badge {
-      padding: 8px 16px;
+    .static-banner-message {
+      font-size: 13px;
     }
     
-    .timer-segment {
-      min-width: 40px;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .static-banner-content {
-      padding: 12px;
-    }
-    
-    .banner-message {
-      font-size: 14px;
-    }
-    
-    .coupon-badge {
-      padding: 6px 12px;
-    }
-    
-    .timer-segment {
-      min-width: 35px;
-    }
-    
-    .timer-value {
-      font-size: 1.2em;
+    .static-banner-timer,
+    .static-banner-coupon {
+      font-size: 11px;
     }
   }
 </style>
@@ -232,449 +130,191 @@
 (function() {
   'use strict';
   
-  const STATIC_BANNER_API = '/apps/banners-1/activestaticbanners';
-  const ANALYTICS_API = '/apps/banners-1/analytics';
-  const FETCH_TIMEOUT = 5000;
+  const CONFIG = {
+    API_ENDPOINT: '/apps/banners-1/activestaticbanners',
+    TIMEOUT: 5000
+  };
   
-  async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
+  async function fetchBannerData() {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
     
     try {
-      const response = await fetch(url, {
-        ...options,
+      const response = await fetch(CONFIG.API_ENDPOINT, {
         signal: controller.signal,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          ...options.headers
-        }
+        headers: { 'Accept': 'application/json' }
       });
+      
       clearTimeout(timeoutId);
-      return response;
+      
+      if (!response.ok) throw new Error('Failed to fetch banner data');
+      
+      return await response.json();
     } catch (error) {
       clearTimeout(timeoutId);
       throw error;
     }
   }
   
-  function generateSessionId() {
-    try {
-      return btoa(navigator.userAgent + Date.now()).slice(0, 16);
-    } catch {
-      return 'anonymous-' + Date.now();
-    }
-  }
-  
-  function getShopDomain() {
-    return window.Shopify?.shop || window.location.host;
-  }
-  
-  async function trackEvent(staticBannerId, eventType) {
-    try {
-      await fetchWithTimeout(ANALYTICS_API, {
-        method: 'POST',
-        body: JSON.stringify({
-          bannerId: staticBannerId,
-          eventType,
-          sessionId: generateSessionId(),
-          shopDomain: getShopDomain()
-        })
-      });
-    } catch (error) {
-      // Analytics tracking failed silently
-    }
-  }
-  
-  function calculateTimeRemaining(endTime) {
-    const now = new Date();
-    const end = new Date(endTime);
-    const distance = end - now;
-    
-    if (distance <= 0) {
-      return { expired: true, days: 0, hours: 0, minutes: 0, seconds: 0 };
-    }
-    
+  function createBannerComponent(banner) {
     return {
-      expired: false,
-      days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-      hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-      minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-      seconds: Math.floor((distance % (1000 * 60)) / 1000)
-    };
-  }
-  
-  function staticBannerComponent(staticBannerData) {
-    return {
-      staticBanner: staticBannerData,
-      currentSlideIndex: 0,
-      timers: {},
+      banner,
+      currentSlide: 0,
       closed: false,
+      autoSlideInterval: null,
       
-      init() {
-        console.log('Initializing static banner component:', this.staticBanner);
-        trackEvent(this.staticBanner.id, 'view');
+      get slides() {
+        return this.banner.slides || [];
+      },
+      
+      get currentSlideData() {
+        return this.slides[this.currentSlide] || {};
+      },
+      
+      get isTimerActive() {
+        const slide = this.currentSlideData;
+        if (!slide.isTimer) return false;
         
-        if (this.staticBanner.hasSlides && this.staticBanner.slides && this.staticBanner.slides.length > 0) {
-          console.log('Setting up slides:', this.staticBanner.slides);
-          this.staticBanner.slides.forEach((slide, index) => {
-            if (slide.isTimer && slide.endTime) {
-              const timeRemaining = calculateTimeRemaining(slide.endTime);
-              if (!timeRemaining.expired) {
-                this.initTimer(index, slide.endTime);
-              } else {
-                console.log('Timer expired for slide', index, 'hiding banner');
-                this.closed = true;
-              }
-            }
-          });
-        } else if (this.staticBanner.isTimer && this.staticBanner.endTime) {
-          const timeRemaining = calculateTimeRemaining(this.staticBanner.endTime);
-          if (!timeRemaining.expired) {
-            this.initTimer('main', this.staticBanner.endTime);
-          } else {
-            console.log('Main timer expired, hiding banner');
-            this.closed = true;
-          }
+        const now = new Date();
+        const start = slide.startTime ? new Date(slide.startTime) : null;
+        const end = slide.endTime ? new Date(slide.endTime) : null;
+        
+        if (start && now < start) return false;
+        if (end && now > end) return false;
+        
+        return true;
+      },
+      
+      get timeRemaining() {
+        if (!this.isTimerActive) return null;
+        
+        const slide = this.currentSlideData;
+        const end = slide.endTime ? new Date(slide.endTime) : null;
+        if (!end) return null;
+        
+        const now = new Date();
+        const diff = end.getTime() - now.getTime();
+        
+        if (diff <= 0) return null;
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        if (days > 0) return `${days}d ${hours}h`;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        return `${minutes}m ${seconds}s`;
+      },
+      
+      nextSlide() {
+        if (this.slides.length <= 1) return;
+        this.currentSlide = (this.currentSlide + 1) % this.slides.length;
+      },
+      
+      goToSlide(index) {
+        if (index >= 0 && index < this.slides.length) {
+          this.currentSlide = index;
         }
+      },
+      
+      startAutoSlide() {
+        if (this.slides.length <= 1) return;
         
-        if (this.staticBanner.hasSlides && this.staticBanner.slides && this.staticBanner.slides.length > 1 && !this.closed) {
-          console.log('Setting up carousel with', this.staticBanner.slides.length, 'slides');
-          this.setupCarousel();
-        }
-      },
-      
-      destroy() {
-        Object.values(this.timers).forEach(timer => {
-          if (timer.interval) clearInterval(timer.interval);
-        });
-      },
-      
-      initTimer(key, endTime) {
-        const updateTimer = () => {
-          const time = calculateTimeRemaining(endTime);
-          this.timers[key] = { ...time };
-          
-          if (time.expired) {
-            if (this.timers[key].interval) {
-              clearInterval(this.timers[key].interval);
-            }
-            this.closed = true;
-          }
-        };
-        
-        updateTimer();
-        this.timers[key] = {
-          ...this.timers[key],
-          interval: setInterval(updateTimer, 1000)
-        };
-      },
-      
-      setupCarousel() {
-        console.log('Setting up carousel interval');
-        setInterval(() => {
-          if (!this.closed) {
-            console.log('Auto-advancing slide from', this.currentSlideIndex, 'to', (this.currentSlideIndex + 1) % this.staticBanner.slides.length);
-            this.nextSlide();
-          }
+        this.autoSlideInterval = setInterval(() => {
+          this.nextSlide();
         }, 5000);
       },
-
-      nextSlide() {
-        const oldIndex = this.currentSlideIndex;
-        this.currentSlideIndex = (this.currentSlideIndex + 1) % this.staticBanner.slides.length;
-        console.log('Slide changed from', oldIndex, 'to', this.currentSlideIndex);
-      },
       
-      prevSlide() {
-        this.currentSlideIndex = this.currentSlideIndex === 0 
-          ? this.staticBanner.slides.length - 1 
-          : this.currentSlideIndex - 1;
-      },
-      
-      getCurrentSlide() {
-        if (this.staticBanner.hasSlides && this.staticBanner.slides.length > 0) {
-          return this.staticBanner.slides[this.currentSlideIndex];
-        }
-        return this.staticBanner;
-      },
-      
-      copyCouponCode(code) {
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(code).then(() => {
-            this.showCopiedFeedback();
-          }).catch(() => {
-            this.fallbackCopyTextToClipboard(code);
-          });
-        } else {
-          this.fallbackCopyTextToClipboard(code);
+      stopAutoSlide() {
+        if (this.autoSlideInterval) {
+          clearInterval(this.autoSlideInterval);
+          this.autoSlideInterval = null;
         }
       },
       
-      fallbackCopyTextToClipboard(text) {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.top = "0";
-        textArea.style.left = "0";
-        textArea.style.position = "fixed";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-          document.execCommand('copy');
-          this.showCopiedFeedback();
-        } catch (err) {
-          console.error('Fallback: Oops, unable to copy', err);
-        }
-        document.body.removeChild(textArea);
+      close() {
+        this.closed = true;
+        this.stopAutoSlide();
       },
       
-      showCopiedFeedback() {
-        if (this._copyTimeout) {
-          clearTimeout(this._copyTimeout);
+      init() {
+        if (this.banner.areMessagesCarousel && this.slides.length > 1) {
+          this.startAutoSlide();
         }
-        
-        this.restoreCouponBadges();
-        
-        const couponBadges = document.querySelectorAll('.coupon-badge');
-        couponBadges.forEach(badge => {
-          const originalHTML = badge.innerHTML;
-          badge.innerHTML = '<span style="color: #059669; font-weight: 700;">✓ Copied!</span>';
-          badge._originalHTML = originalHTML;
-        });
-        
-        this._copyTimeout = setTimeout(() => {
-          this.restoreCouponBadges();
-          this._copyTimeout = null;
-        }, 1500);
-      },
-      
-      restoreCouponBadges() {
-        const couponBadges = document.querySelectorAll('.coupon-badge');
-        couponBadges.forEach(badge => {
-          if (badge._originalHTML) {
-            badge.innerHTML = badge._originalHTML;
-            delete badge._originalHTML;
-          }
-        });
-      },
-      
-      getContainerStyle() {
-        const styles = [];
-        
-        if (this.staticBanner.bgColor) {
-          styles.push(`background-color: ${this.staticBanner.bgColor}`);
-        }
-        
-        if (this.staticBanner.messageColor) {
-          styles.push(`color: ${this.staticBanner.messageColor}`);
-        }
-        
-        if (this.staticBanner.bannerBorderRadius !== null && this.staticBanner.bannerBorderRadius !== undefined) {
-          styles.push(`border-radius: ${this.staticBanner.bannerBorderRadius}px`);
-        }
-        
-        if (this.staticBanner.bannerPadding !== null && this.staticBanner.bannerPadding !== undefined) {
-          styles.push(`padding: ${this.staticBanner.bannerPadding}px`);
-        }
-        
-        if (this.staticBanner.bannerTopMargin !== null && this.staticBanner.bannerTopMargin !== undefined) {
-          styles.push(`margin-top: ${this.staticBanner.bannerTopMargin}px`);
-        }
-        if (this.staticBanner.bannerBottomMargin !== null && this.staticBanner.bannerBottomMargin !== undefined) {
-          styles.push(`margin-bottom: ${this.staticBanner.bannerBottomMargin}px`);
-        }
-        if (this.staticBanner.bannerLeftMargin !== null && this.staticBanner.bannerLeftMargin !== undefined) {
-          styles.push(`margin-left: ${this.staticBanner.bannerLeftMargin}px`);
-        }
-        if (this.staticBanner.bannerRightMargin !== null && this.staticBanner.bannerRightMargin !== undefined) {
-          styles.push(`margin-right: ${this.staticBanner.bannerRightMargin}px`);
-        }
-        
-        if (this.staticBanner.customHeight && this.staticBanner.bannerHeight !== 'auto') {
-          styles.push(`height: ${this.staticBanner.customHeight}px`);
-        }
-        
-        if (this.staticBanner.bannerWidth === 'custom' && this.staticBanner.customWidth) {
-          styles.push(`width: ${this.staticBanner.customWidth}%`);
-          styles.push(`margin-left: auto`);
-          styles.push(`margin-right: auto`);
-        }
-        
-        return styles.join('; ');
-      },
-      
-      getSlideTransform() {
-        return `translateX(-${this.currentSlideIndex * 100}%)`;
-      },
-      
-      formatTimerValue(value) {
-        return value.toString().padStart(2, '0');
       }
     };
   }
   
-  function renderStaticBanner(staticBanner) {
+  function renderBanner(banner) {
     return `
-      <div class="static-banner-wrapper">
-        <div 
-          x-data="staticBannerComponent(${JSON.stringify(staticBanner).replace(/"/g, '&quot;')})"
-          x-show="!closed"
-          x-cloak
-          class="static-banner-container"
-        >
-          <div 
-            :style="getContainerStyle()"
-            class="static-banner-transition static-banner-inner-container"
-          >
-            <div class="static-banner-slides-wrapper">
-              <div class="static-banner-slides-container" :style="'transform: ' + getSlideTransform()">
-                
-                <template x-if="staticBanner.hasSlides && staticBanner.slides && staticBanner.slides.length > 0">
-                  <template x-for="(slide, index) in staticBanner.slides" :key="index">
-                    <div class="static-banner-slide">
-                      <div class="static-banner-content">
-                        
-                        <!-- Message -->
-                        <template x-if="slide.message">
-                          <div 
-                            class="banner-item banner-message" 
-                            x-text="slide.message"
-                            :style="'font-size: ' + (staticBanner.messageFontSize) + 'px; color: ' + (staticBanner.messageColor) + '; padding: ' + (staticBanner.messagePadding) + 'px; font-weight: 500; line-height: 1.4'"
-                          ></div>
-                        </template>
-                        
-                        <!-- Coupon Code -->
-                        <template x-if="slide.hasCoupon && slide.couponCode">
-                          <div class="banner-item coupon-section">
-                            <div 
-                              class="coupon-badge"
-                              :style="'background: ' + (staticBanner.couponBackgroundColor) + '; border: 1px solid ' + (staticBanner.couponBorderColor) + '; border-radius: ' + (staticBanner.bannerBorderRadius / 2) + 'px; padding: ' + (staticBanner.couponPadding) + 'px; font-size: ' + (staticBanner.couponFontSize) + 'px; position: relative; cursor: pointer;'"
-                              @click="copyCouponCode(slide.couponCode)"
-                            >
-                              <div class="coupon-dots" :style="'position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border: 2px dotted ' + (staticBanner.couponBorderColor) + '; border-radius: inherit; pointer-events: none;'"></div>
-                              <span class="coupon-label" :style="'color: ' + (staticBanner.couponTextColor) + ';'">Code:</span>
-                              <span class="coupon-code" x-text="slide.couponCode" :style="'color: ' + (staticBanner.couponTextColor) + '; font-family: monospace; font-weight: 700;'"></span>
-                            </div>
-                          </div>
-                        </template>
-                        
-                        <!-- Timer -->
-                        <template x-if="slide.isTimer && slide.endTime">
-                          <div class="banner-item timer-section">
-                            <div 
-                              class="timer-container"
-                              :style="'color: ' + (staticBanner.timerTextColor) + '; font-size: ' + (staticBanner.timerFontSize) + 'px'"
-                            >
-                              <template x-if="timers[index]">
-                                <template x-if="timers[index].days > 0">
-                                  <div class="timer-segment">
-                                    <div class="timer-value" x-text="formatTimerValue(timers[index].days)"></div>
-                                    <div class="timer-label">DAYS</div>
-                                  </div>
-                                </template>
-                              </template>
-                              
-                              <template x-if="timers[index]">
-                                <div class="timer-segment">
-                                  <div class="timer-value" x-text="formatTimerValue(timers[index].hours)"></div>
-                                  <div class="timer-label">HRS</div>
-                                </div>
-                              </template>
-                              
-                              <template x-if="timers[index]">
-                                <div class="timer-segment">
-                                  <div class="timer-value" x-text="formatTimerValue(timers[index].minutes)"></div>
-                                  <div class="timer-label">MIN</div>
-                                </div>
-                              </template>
-                              
-                              <template x-if="timers[index]">
-                                <div class="timer-segment">
-                                  <div class="timer-value" x-text="formatTimerValue(timers[index].seconds)"></div>
-                                  <div class="timer-label">SEC</div>
-                                </div>
-                              </template>
-                            </div>
-                          </div>
-                        </template>
-                      </div>
+      <div 
+        x-data="createBannerComponent(${JSON.stringify(banner).replace(/"/g, '&quot;')})"
+        x-init="init()"
+        x-show="!closed"
+        x-cloak
+        class="static-banner-wrapper"
+      >
+        <div class="static-banner-container">
+          <div class="static-banner-slides-wrapper">
+            <div 
+              class="static-banner-slides-container"
+              :style="'transform: translateX(-' + (currentSlide * 100) + '%)'"
+            >
+              ${banner.slides.map((slide, index) => `
+                <div class="static-banner-slide">
+                  <div class="static-banner-content">
+                    <p class="static-banner-message" x-text="slides[${index}].message"></p>
+                    
+                    <div x-show="currentSlide === ${index} && isTimerActive && timeRemaining" class="static-banner-timer">
+                      <span x-text="timeRemaining"></span>
                     </div>
-                  </template>
-                </template>
-                
-                <template x-if="!staticBanner.hasSlides || staticBanner.slides.length === 0">
-                  <div class="static-banner-slide">
-                    <div class="static-banner-content">
-                      <div class="simple-message">
-                        <p x-text="staticBanner.messages && staticBanner.messages[0] ? staticBanner.messages[0] : ''"></p>
-                      </div>
+                    
+                    <div x-show="currentSlide === ${index} && slides[${index}].hasCoupon && slides[${index}].couponCode" class="static-banner-coupon">
+                      <span x-text="slides[${index}].couponCode"></span>
                     </div>
+                    
+                    <button 
+                      class="static-banner-close"
+                      @click="close()"
+                      aria-label="Close banner"
+                    >&times;</button>
                   </div>
-                </template>
-                
-              </div>
+                </div>
+              `).join('')}
             </div>
-            
           </div>
+          
+          ${banner.areMessagesCarousel && banner.slides.length > 1 ? `
+            <div class="static-banner-dots">
+              ${banner.slides.map((_, index) => `
+                <button 
+                  class="static-banner-dot"
+                  :class="{ active: currentSlide === ${index} }"
+                  @click="goToSlide(${index})"
+                ></button>
+              `).join('')}
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
   }
   
   async function init() {
-    const rootElement = document.getElementById('static-banner-root');
-    console.log('Static banner init - rootElement:', rootElement);
-    if (!rootElement) {
-      console.log('No root element found');
-      return;
-    }
-    
     try {
-      console.log('Fetching from:', STATIC_BANNER_API);
-      const response = await fetchWithTimeout(STATIC_BANNER_API);
+      const data = await fetchBannerData();
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch static banners: ' + response.status);
-      }
-
-      const data = await response.json();
-      const staticBanners = data.staticBanners || [];
-      
-      console.log('Static banners data:', data);
-      console.log('Static banners array:', staticBanners);
-      
-      if (staticBanners.length === 0) {
-        console.log('No static banners found');
+      if (!data.banner || !data.banner.isActive) {
         return;
       }
       
-      staticBanners.sort((a, b) => (a.priority || 0) - (b.priority || 0));
-      
-      const staticBannersHTML = staticBanners.map(renderStaticBanner).join('');
-      console.log('Generated HTML:', staticBannersHTML);
-      
-      rootElement.innerHTML = staticBannersHTML;
-      console.log('HTML inserted into root element');
-      
-      // Ensure Alpine.js initializes the components
-      if (window.Alpine) {
-        window.Alpine.initTree(rootElement);
-      } else {
-        // Wait for Alpine.js to load
-        const checkAlpine = setInterval(() => {
-          if (window.Alpine) {
-            window.Alpine.initTree(rootElement);
-            clearInterval(checkAlpine);
-          }
-        }, 100);
-        
-        // Clear interval after 5 seconds to avoid infinite checking
-        setTimeout(() => clearInterval(checkAlpine), 5000);
-      }
+      const container = document.createElement('div');
+      container.innerHTML = renderBanner(data.banner);
+      document.body.appendChild(container);
       
     } catch (error) {
-      console.log('Static banner initialization failed:', error);
+      console.error('Static banner initialization failed:', error);
     }
   }
   
@@ -683,22 +323,17 @@
   } else {
     init();
   }
-  
-  window.staticBannerComponent = staticBannerComponent;
 })();
 </script>
 
 {% schema %}
 {
-  "name": "Static Banner System",
+  "name": "Static Banner",
   "target": "section",
   "settings": [
     {
-      "type": "text",
-      "id": "default_message",
-      "label": "Default Message",
-      "default": "Welcome to our store!",
-      "info": "Displayed when no active static banners are available"
+      "type": "paragraph",
+      "content": "Professional static banner that can be placed anywhere in your theme."
     }
   ]
 }

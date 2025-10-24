@@ -8,7 +8,7 @@
 <style>
   /* Reset and base styles */
   #product-banner-spacer {
-    height: 130px;
+    height: var(--banner-height);
     width: 100%;
   }
   
@@ -18,13 +18,13 @@
     bottom: 100px;
     left: 0;
     right: 0;
-    height: 30px;
-    background: #FF6B6B;
-    color: white;
+    height: var(--hurry-up-height);
+    background: var(--hurry-up-bg-color);
+    color: var(--hurry-up-text-color);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: var(--hurry-up-font-size);
     font-weight: 600;
     z-index: 1000000;
     width: 100%;
@@ -37,28 +37,29 @@
     left: 0;
     right: 0;
     background: white;
-    border-radius: 8px;
-    margin: 10px;
+    border-radius: var(--mobile-banner-radius);
+    margin: var(--mobile-banner-margin);
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     font-family: inherit;
+    height: var(--mobile-banner-height);
   }
   
   .mobile-hurry-up {
-    height: 30px;
-    background: #FF6B6B;
-    color: white;
+    height: var(--mobile-hurry-up-height);
+    background: var(--mobile-hurry-up-bg-color);
+    color: var(--mobile-hurry-up-text-color);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: var(--mobile-hurry-up-font-size);
     font-weight: 600;
-    border-radius: 8px 8px 0 0;
+    border-radius: var(--mobile-banner-radius) var(--mobile-banner-radius) 0 0;
     font-family: inherit;
   }
   
   .mobile-product {
-    height: 60px;
-    padding: 12px 16px;
+    height: var(--mobile-product-height);
+    padding: var(--mobile-product-padding);
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -70,33 +71,33 @@
   }
   
   .mobile-product-title {
-    font-size: 16px;
+    font-size: var(--mobile-title-font-size);
     font-weight: 600;
-    color: #111827;
+    color: var(--mobile-title-color);
     margin: 0 0 4px 0;
     font-family: inherit;
     line-height: 1.4;
   }
   
   .mobile-product-price {
-    font-size: 14px;
-    color: #6b7280;
+    font-size: var(--mobile-price-font-size);
+    color: var(--mobile-price-color);
     margin: 0;
     font-family: inherit;
     line-height: 1.4;
   }
   
   .mobile-add-cart-btn {
-    background: #FF6B6B;
-    color: white;
+    background: var(--mobile-button-bg-color);
+    color: var(--mobile-button-text-color);
     border: none;
-    padding: 12px 20px;
-    border-radius: 6px;
-    font-size: 16px;
+    padding: var(--mobile-button-padding);
+    border-radius: var(--mobile-button-radius);
+    font-size: var(--mobile-button-font-size);
     font-weight: 600;
     cursor: pointer;
     min-width: 120px;
-    height: 40px;
+    height: var(--mobile-button-height);
     align-self: flex-start;
     display: flex;
     align-items: center;
@@ -234,14 +235,14 @@
   }
   
   .product-banner-image {
-    width: 80px;
-    height: 80px;
+    width: var(--banner-image-width);
+    height: var(--banner-image-height);
     border-radius: 8px;
     overflow: hidden;
     flex-shrink: 0;
     background: #f9fafb;
     border: 1px solid #e5e7eb;
-  }
+    }
   
   .product-banner-image img {
     width: 100%;
@@ -255,9 +256,9 @@
   }
   
   .product-banner-title {
-    font-size: 15px;
+    font-size: var(--banner-title-font-size);
     font-weight: 600;
-    color: #111827;
+    color: var(--banner-title-color);
     line-height: 1.4;
     margin: 0 0 2px 0;
     white-space: nowrap;
@@ -266,8 +267,8 @@
   }
   
   .product-banner-price {
-    font-size: 14px;
-    color: #6b7280;
+    font-size: var(--banner-price-font-size);
+    color: var(--banner-price-color);
     margin: 0;
   }
   
@@ -302,25 +303,25 @@
   }
   
   .product-banner-btn-cart {
-    background: #FF6B6B;
-    color: #ffffff;
-    border: 2px solid #FF6B6B;
+    background: var(--button1-bg-color);
+    color: var(--button1-text-color);
+    border: 2px solid var(--button1-border-color);
   }
   
   .product-banner-btn-cart:hover:not(:disabled) {
-    background: #FF5252;
-    border-color: #FF5252;
+    background: var(--button1-bg-color-hover, #FF5252);
+    border-color: var(--button1-border-color-hover, #FF5252);
   }
   
   .product-banner-btn-buy {
-    background: #ffffff;
-    color: #FF6B6B;
-    border: 2px solid #FF6B6B;
+    background: var(--button2-bg-color);
+    color: var(--button2-text-color);
+    border: 2px solid var(--button2-border-color);
   }
   
   .product-banner-btn-buy:hover:not(:disabled) {
-    background: #FF6B6B;
-    color: #ffffff;
+    background: var(--button2-bg-color-hover, #FF6B6B);
+    color: var(--button2-text-color-hover, #ffffff);
   }
   
   .product-banner-spinner {
@@ -483,7 +484,6 @@
       const paddingRight = styles.paddingRight;
       
       if (maxWidth && maxWidth !== 'none') {
-        console.log('Theme styles detected:', { selector, maxWidth, paddingLeft, paddingRight });
         return {
           maxWidth,
           padding: paddingLeft
@@ -532,7 +532,9 @@
       
       clearTimeout(timeoutId);
       
-      if (!response.ok) throw new Error('Failed to fetch banner data');
+      if (!response.ok) {
+        throw new Error('Failed to fetch banner data');
+      }
       
       return await response.json();
     } catch (error) {
@@ -627,8 +629,9 @@
     };
   }
   
-  function renderBanner(product) {
+  function renderBanner(product, settings) {
     const price = product.price ? `₹ ${product.price}` : '';
+    const showPrice = settings ? settings.showPrice : true;
     
     return `
       <div 
@@ -659,7 +662,7 @@
           <div class="mobile-product">
             <div class="mobile-product-info">
               <div class="mobile-product-title" x-text="product.title"></div>
-              <div class="mobile-product-price" x-text="product.price ? '₹ ' + product.price : ''"></div>
+              ${showPrice ? `<div class="mobile-product-price" x-text="product.price ? '₹ ' + product.price : ''"></div>` : ''}
             </div>
             <button 
               @click="handleAddToCart()"
@@ -695,7 +698,7 @@
                   
                   <div class="product-banner-info">
                     <h3 class="product-banner-title" x-text="product.title"></h3>
-                    ${price ? `<p class="product-banner-price">${price}</p>` : ''}
+                    ${showPrice && price ? `<p class="product-banner-price">${price}</p>` : ''}
                   </div>
                 </div>
                 
@@ -726,32 +729,124 @@
     `;
   }
   
+  function applyBannerSettings(settings) {
+    const root = document.documentElement;
+    
+    if (!settings) {
+      // Apply default values
+      root.style.setProperty('--banner-height', '130px');
+      root.style.setProperty('--banner-image-width', '80px');
+      root.style.setProperty('--banner-image-height', '80px');
+      root.style.setProperty('--banner-title-font-size', '15px');
+      root.style.setProperty('--banner-title-color', '#111827');
+      root.style.setProperty('--banner-price-font-size', '14px');
+      root.style.setProperty('--banner-price-color', '#6b7280');
+      root.style.setProperty('--button1-text-color', '#ffffff');
+      root.style.setProperty('--button1-bg-color', '#FF6B6B');
+      root.style.setProperty('--button1-border-color', '#FF6B6B');
+      root.style.setProperty('--button2-text-color', '#FF6B6B');
+      root.style.setProperty('--button2-bg-color', '#ffffff');
+      root.style.setProperty('--button2-border-color', '#FF6B6B');
+      root.style.setProperty('--hurry-up-height', '30px');
+      root.style.setProperty('--hurry-up-bg-color', '#FF6B6B');
+      root.style.setProperty('--hurry-up-text-color', '#ffffff');
+      root.style.setProperty('--hurry-up-font-size', '14px');
+      root.style.setProperty('--mobile-banner-height', '90px');
+      root.style.setProperty('--mobile-banner-radius', '8px');
+      root.style.setProperty('--mobile-banner-margin', '10px');
+      root.style.setProperty('--mobile-product-height', '60px');
+      root.style.setProperty('--mobile-product-padding', '12px 16px');
+      root.style.setProperty('--mobile-title-font-size', '16px');
+      root.style.setProperty('--mobile-title-color', '#111827');
+      root.style.setProperty('--mobile-price-font-size', '14px');
+      root.style.setProperty('--mobile-price-color', '#6b7280');
+      root.style.setProperty('--mobile-button-height', '40px');
+      root.style.setProperty('--mobile-button-padding', '12px 20px');
+      root.style.setProperty('--mobile-button-font-size', '16px');
+      root.style.setProperty('--mobile-button-radius', '6px');
+      root.style.setProperty('--mobile-button-text-color', '#ffffff');
+      root.style.setProperty('--mobile-button-bg-color', '#FF6B6B');
+      root.style.setProperty('--mobile-hurry-up-height', '30px');
+      root.style.setProperty('--mobile-hurry-up-font-size', '14px');
+      root.style.setProperty('--mobile-hurry-up-bg-color', '#FF6B6B');
+      root.style.setProperty('--mobile-hurry-up-text-color', '#ffffff');
+      return;
+    }
+    
+    // Desktop banner settings
+    root.style.setProperty('--banner-height', settings.bannerHeight + 'px');
+    root.style.setProperty('--banner-image-width', settings.bannerImageHeight + 'px');
+    root.style.setProperty('--banner-image-height', settings.bannerImageHeight + 'px');
+    root.style.setProperty('--banner-title-font-size', settings.bannerTitleFontSize + 'px');
+    root.style.setProperty('--banner-title-color', '#' + settings.bannerTitleColor);
+    root.style.setProperty('--banner-price-font-size', settings.bannerPriceFontSize + 'px');
+    root.style.setProperty('--banner-price-color', '#' + settings.bannerPriceColor);
+    
+    // Button settings
+    root.style.setProperty('--button1-text-color', '#' + settings.button1TextColor);
+    root.style.setProperty('--button1-bg-color', '#' + settings.button1BackgroundColor);
+    root.style.setProperty('--button1-border-color', '#' + settings.button1BorderColor);
+    root.style.setProperty('--button2-text-color', '#' + settings.button2TextColor);
+    root.style.setProperty('--button2-bg-color', '#' + settings.button2BackgroundColor);
+    root.style.setProperty('--button2-border-color', '#' + settings.button2BorderColor);
+    
+    // Hurry up banner settings
+    root.style.setProperty('--hurry-up-height', settings.hurryUpBannerHeight + 'px');
+    root.style.setProperty('--hurry-up-bg-color', '#' + settings.hurryUpBannerBackgroundColor);
+    root.style.setProperty('--hurry-up-text-color', '#' + settings.hurryUpTextColor);
+    root.style.setProperty('--hurry-up-font-size', settings.hurryUpFontSize + 'px');
+    
+    // Mobile banner settings
+    root.style.setProperty('--mobile-banner-height', settings.mobileBannerHeight + 'px');
+    root.style.setProperty('--mobile-banner-radius', settings.mobileBannerBorderRadius + 'px');
+    root.style.setProperty('--mobile-banner-margin', settings.mobileBannerMargin + 'px');
+    root.style.setProperty('--mobile-product-height', settings.mobileProductHeight + 'px');
+    root.style.setProperty('--mobile-product-padding', settings.mobileProductPadding);
+    
+    // Mobile title and price
+    root.style.setProperty('--mobile-title-font-size', settings.mobileTitleFontSize + 'px');
+    root.style.setProperty('--mobile-title-color', '#' + settings.mobileTitleColor);
+    root.style.setProperty('--mobile-price-font-size', settings.mobilePriceFontSize + 'px');
+    root.style.setProperty('--mobile-price-color', '#' + settings.mobilePriceColor);
+    
+    // Mobile button
+    root.style.setProperty('--mobile-button-height', settings.mobileButtonHeight + 'px');
+    root.style.setProperty('--mobile-button-padding', settings.mobileButtonPadding);
+    root.style.setProperty('--mobile-button-font-size', settings.mobileButtonFontSize + 'px');
+    root.style.setProperty('--mobile-button-radius', settings.mobileButtonBorderRadius + 'px');
+    root.style.setProperty('--mobile-button-text-color', '#' + settings.mobileButtonTextColor);
+    root.style.setProperty('--mobile-button-bg-color', '#' + settings.mobileButtonBackgroundColor);
+    
+    // Mobile hurry up
+    root.style.setProperty('--mobile-hurry-up-height', settings.mobileHurryUpHeight + 'px');
+    root.style.setProperty('--mobile-hurry-up-font-size', settings.mobileHurryUpFontSize + 'px');
+    root.style.setProperty('--mobile-hurry-up-bg-color', '#' + settings.mobileHurryUpBackgroundColor);
+    root.style.setProperty('--mobile-hurry-up-text-color', '#' + settings.mobileHurryUpTextColor);
+  }
+  
   async function init() {
     try {
       const handle = getCurrentProductHandle();
       
       if (!handle) {
-        console.log('Not a product page');
         return;
       }
       
       const data = await fetchBannerData(handle);
       
       if (!data.product) {
-        console.log('No banner configured for this product');
         return;
       }
       
       applyThemeStyles();
+      applyBannerSettings(data.settings);
       
       const container = document.createElement('div');
-      container.innerHTML = renderBanner(data.product);
+      container.innerHTML = renderBanner(data.product, data.settings);
       document.body.appendChild(container);
       
-      console.log('Product banner loaded successfully');
-      
     } catch (error) {
-      console.error('Banner initialization failed:', error);
+      // Silent fail - banner won't show if there's an error
     }
   }
   
