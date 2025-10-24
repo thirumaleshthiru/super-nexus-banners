@@ -1,6 +1,6 @@
 {% comment %}
-  Professional Product Banner System v4.0
-  Matches Shopify theme alignment and styling perfectly
+  Product Banner System - Exact Figma Match
+  Clean, simple design matching the provided specifications
 {% endcomment %}
 
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -8,47 +8,112 @@
 <style>
   /* Reset and base styles */
   #product-banner-spacer {
-    height: 85px;
+    height: 130px;
     width: 100%;
   }
   
-  /* Enhanced inventory banner - more highlighted */
-  .inventory-banner {
+  /* Hurry Up Banner - Above product banner at bottom */
+  .hurry-up-banner {
     position: fixed;
-    bottom: 85px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000000;
-    background: #000;
+    bottom: 100px;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: #FF6B6B;
     color: white;
-    text-align: center;
-    padding: 10px 20px;
-    font-size: 15px;
-    font-weight: 700;
-    border-radius: 6px;
-    animation: slideUp 0.3s ease-out;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    border: 2px solid #fff;
-  }
-  
-  .inventory-banner .inventory-text {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 1000000;
+    width: 100%;
+  }
+  /* Mobile: Single banner with Hurry Up + Product */
+  .mobile-banner {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    margin: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    font-family: inherit;
   }
   
-  .inventory-banner .inventory-number {
-    background: #fff;
-    color: #000;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: 900;
+  .mobile-hurry-up {
+    height: 30px;
+    background: #FF6B6B;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px 8px 0 0;
+    font-family: inherit;
+  }
+  
+  .mobile-product {
+    height: 60px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  
+  .mobile-product-info {
+    flex: 1;
+  }
+  
+  .mobile-product-title {
     font-size: 16px;
-    margin: 0 2px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 4px 0;
+    font-family: inherit;
+    line-height: 1.4;
   }
   
+  .mobile-product-price {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  
+  .mobile-add-cart-btn {
+    background: #FF6B6B;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 120px;
+    height: 40px;
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  
+  .hurry-up-banner .stock-number {
+    background: #fff;
+    color: #FF6B6B;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+    margin: 0 2px;
+  }
   
   @keyframes slideUp {
     from {
@@ -74,30 +139,64 @@
     }
   }
   
-  /* Mobile responsive design for inventory banner */
+  /* Mobile responsive design */
   @media (max-width: 768px) {
-    .inventory-banner {
-      bottom: 140px;
-      padding: 8px 16px;
-      font-size: 14px;
-      z-index: 1000001;
-      left: 10px;
-      right: 10px;
-      transform: none;
-      width: auto;
+    .hurry-up-banner {
+      display: none;
+    }
+    
+    .product-banner-fixed-wrapper {
+      display: none;
+    }
+    
+    .mobile-banner {
+      display: block;
+    }
+    
+    #product-banner-spacer {
+      height: 100px;
     }
   }
   
   @media (max-width: 480px) {
-    .inventory-banner {
-      bottom: 150px;
-      padding: 7px 14px;
+    .mobile-hurry-up {
+      font-size: 12px;
+    }
+    
+    .mobile-product-title {
+      font-size: 14px;
+    }
+    
+    .mobile-product-price {
+      font-size: 12px;
+    }
+    
+    .mobile-add-cart-btn {
+      font-size: 14px;
+      padding: 10px 16px;
+      min-width: 100px;
+      height: 36px;
+    }
+  }
+  
+  @media (max-width: 360px) {
+    .mobile-hurry-up {
+      font-size: 11px;
+    }
+    
+    .mobile-product-title {
       font-size: 13px;
-      z-index: 1000001;
-      left: 8px;
-      right: 8px;
-      transform: none;
-      width: auto;
+    }
+    
+    .mobile-product-price {
+      font-size: 11px;
+    }
+    
+    .mobile-add-cart-btn {
+      font-size: 13px;
+      padding: 8px 12px;
+      min-width: 90px;
+      height: 32px;
     }
   }
   
@@ -108,14 +207,12 @@
     right: 0 !important;
     z-index: 999999 !important;
     background: #ffffff;
-  
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
   }
   
   .product-banner-container {
     max-width: var(--theme-max-width, 1400px);
     margin: 0 auto;
-    padding: 12px var(--theme-padding, 10px);
+    padding: 12px var(--theme-padding, 20px);
     box-sizing: border-box;
   }
   
@@ -137,13 +234,14 @@
   }
   
   .product-banner-image {
-    width: 75px;
-    height: 75px;
-    border-radius: 10px;
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
     overflow: hidden;
     flex-shrink: 0;
     background: #f9fafb;
-    }
+    border: 1px solid #e5e7eb;
+  }
   
   .product-banner-image img {
     width: 100%;
@@ -187,13 +285,15 @@
     padding: 10px 20px;
     font-size: 14px;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: 15px;
     border: none;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
     text-transform: uppercase;
     letter-spacing: 0.3px;
+    min-width: 180px;
+    height: 45px;
   }
   
   .product-banner-btn:disabled {
@@ -202,24 +302,24 @@
   }
   
   .product-banner-btn-cart {
-    background: #000000;
+    background: #FF6B6B;
     color: #ffffff;
-    border: 2px solid #000000;
+    border: 2px solid #FF6B6B;
   }
   
   .product-banner-btn-cart:hover:not(:disabled) {
-    background: #1f2937;
-    border-color: #1f2937;
+    background: #FF5252;
+    border-color: #FF5252;
   }
   
   .product-banner-btn-buy {
     background: #ffffff;
-    color: #000000;
-    border: 2px solid #000000;
+    color: #FF6B6B;
+    border: 2px solid #FF6B6B;
   }
   
   .product-banner-btn-buy:hover:not(:disabled) {
-    background: #000000;
+    background: #FF6B6B;
     color: #ffffff;
   }
   
@@ -262,23 +362,7 @@
     color: #4b5563;
   }
   
-  /* Tablet styles */
-  @media (max-width: 1024px) {
-    .product-banner-container {
-      padding: 16px var(--theme-padding, 16px);
-    }
-    
-    .product-banner-content {
-      gap: 16px;
-    }
-    
-    .product-banner-btn {
-      padding: 10px 20px;
-      font-size: 13px;
-    }
-  }
-  
-  /* Mobile styles */
+  /* Mobile styles - EXACT Figma specifications */
   @media (max-width: 768px) {
     #product-banner-spacer {
       height: 120px;
@@ -305,22 +389,36 @@
     
     .product-banner-left {
       width: 100%;
+      flex-direction: column;
+      text-align: center;
+      gap: 8px;
+    }
+    
+    .product-banner-image {
+      width: 80px;
+      height: 60px;
+      margin: 0 auto;
     }
     
     .product-banner-title {
       white-space: normal;
       overflow: visible;
+      text-align: center;
     }
     
     .product-banner-actions {
       width: 100%;
       gap: 10px;
+      flex-direction: column;
     }
     
     .product-banner-btn {
-      flex: 1;
-      padding: 11px 16px;
+      width: 100%;
+      min-width: 140px;
+      height: 35px;
+      padding: 8px 16px;
       font-size: 13px;
+      border-radius: 10px;
     }
     
     .product-banner-close {
@@ -330,8 +428,8 @@
   
   @media (max-width: 480px) {
     .product-banner-image {
-      width: 55px;
-      height: 55px;
+      width: 50px;
+      height: 50px;
     }
     
     .product-banner-title {
@@ -344,7 +442,9 @@
     
     .product-banner-btn {
       font-size: 12px;
-      padding: 10px 14px;
+      padding: 8px 14px;
+      min-width: 120px;
+      height: 32px;
     }
   }
 </style>
@@ -480,8 +580,8 @@
       get inventoryMessage() {
         if (!this.product.shouldShowLowStock) return '';
         const quantity = this.product.inventoryQuantity;
-        if (quantity === 1) return 'Only <span class="inventory-number">1</span> left in stock!';
-        return `Only <span class="inventory-number">${quantity}</span> left in stock!`;
+        if (quantity === 1) return 'Only <span class="stock-number">1</span> left in stock!';
+        return `Only <span class="stock-number">${quantity}</span> left in stock!`;
       },
       
       async handleAddToCart() {
@@ -517,10 +617,10 @@
       
       close() {
         this.closed = true;
-        // Also hide the inventory banner when product banner is closed
-        const inventoryBanner = document.querySelector('.inventory-banner');
-        if (inventoryBanner) {
-          inventoryBanner.style.display = 'none';
+        // Also hide the hurry up banner when product banner is closed
+        const hurryUpBanner = document.querySelector('.hurry-up-banner');
+        if (hurryUpBanner) {
+          hurryUpBanner.style.display = 'none';
         }
       },
       
@@ -535,17 +635,44 @@
         x-data="createBannerComponent(${JSON.stringify(product).replace(/"/g, '&quot;')})"
         x-init=""
       >
-        <!-- Top Inventory Banner -->
+        <!-- Hurry Up Banner - 30px height at top -->
         <div 
           x-show="product.shouldShowLowStock"
           x-cloak
-          class="inventory-banner"
+          class="hurry-up-banner"
         >
           <div class="inventory-text" x-html="inventoryMessage">
           </div>
         </div>
         
-        <!-- Bottom Product Banner -->
+        <!-- Mobile Banner - Single component like your image -->
+        <div class="mobile-banner">
+          <div 
+            x-show="product.shouldShowLowStock"
+            x-cloak
+            class="mobile-hurry-up"
+          >
+            <div class="inventory-text" x-html="inventoryMessage">
+            </div>
+          </div>
+          
+          <div class="mobile-product">
+            <div class="mobile-product-info">
+              <div class="mobile-product-title" x-text="product.title"></div>
+              <div class="mobile-product-price" x-text="product.price ? '₹ ' + product.price : ''"></div>
+            </div>
+            <button 
+              @click="handleAddToCart()"
+              :disabled="cartLoading || buyLoading"
+              class="mobile-add-cart-btn"
+            >
+              <span x-show="cartLoading">Adding...</span>
+              <span x-show="!cartLoading">Add to Cart</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Desktop Product Banner -->
         <div id="product-banner-spacer"></div>
         <div class="product-banner-fixed-wrapper">
           <div x-show="!closed" x-cloak>
@@ -560,9 +687,9 @@
                 <div class="product-banner-left">
                   <div class="product-banner-image">
                     <img 
-                      :src="product.featuredImage || 'https://via.placeholder.com/60'" 
+                      :src="product.featuredImage || 'https://via.placeholder.com/80'" 
                       :alt="product.title"
-                      @error="$el.src='https://via.placeholder.com/60'"
+                      @error="$el.src='https://via.placeholder.com/80'"
                     />
                   </div>
                   
