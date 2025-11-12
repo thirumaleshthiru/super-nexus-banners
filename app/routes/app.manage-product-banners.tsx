@@ -435,14 +435,19 @@ export default function ManageProductBannersPage() {
           <BlockStack gap="400">
             {/* Header */}
             <Card>
-              <BlockStack gap="200">
-                <Text as="h2" variant="headingLg">
-                  Product Banner Configuration
-                </Text>
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Manage global banner settings and customize individual products
-                </Text>
-              </BlockStack>
+              <InlineStack align="space-between">
+                <BlockStack gap="200">
+                  <Text as="h2" variant="headingLg">
+                    Product Banner Configuration
+                  </Text>
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Manage global banner settings and customize individual products
+                  </Text>
+                </BlockStack>
+                <Button url="/app/product-banner-analytics" variant="primary">
+                  View Analytics
+                </Button>
+              </InlineStack>
             </Card>
 
             {/* Tabs */}

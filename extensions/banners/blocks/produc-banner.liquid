@@ -15,8 +15,43 @@
   
   const CONFIG = {
     API_ENDPOINT: '/apps/banners-1/activeproductbanners',
+    ANALYTICS_ENDPOINT: '/apps/banners-1/product-banner-analytics',
     TIMEOUT: 5000
   };
+  
+  // Generate or retrieve session ID
+  function getSessionId() {
+    let sessionId = sessionStorage.getItem('pb_session_id');
+    if (!sessionId) {
+      sessionId = 'pb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      sessionStorage.setItem('pb_session_id', sessionId);
+    }
+    return sessionId;
+  }
+  
+  // Track analytics event
+  async function trackEvent(productHandle, eventType, metadata = {}) {
+    try {
+      const sessionId = getSessionId();
+      
+      await fetch(CONFIG.ANALYTICS_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productHandle,
+          eventType,
+          sessionId,
+          ...metadata,
+          timestamp: new Date().toISOString()
+        })
+      });
+    } catch (error) {
+      // Silent fail - don't disrupt user experience
+      console.debug('Analytics tracking failed:', error);
+    }
+  }
   
   function getCurrentProductHandle() {
     const metaOgUrl = document.querySelector('meta[property="og:url"]');
@@ -125,6 +160,12 @@
   }
   
   function createBannerComponent(product) {
+    // Track banner view on creation
+    trackEvent(product.handle, 'banner_view', {
+      productId: product.id,
+      productTitle: product.title
+    });
+    
     return {
       product,
       cartLoading: false,
@@ -176,6 +217,12 @@
       },
       
       handleAddToCartClick() {
+        // Track add to cart button click
+        trackEvent(this.product.handle, 'add_to_cart_click', {
+          productId: this.product.id,
+          hasOptions: this.hasOptions
+        });
+        
         if (this.hasOptions) {
           if (this.product.options) {
             this.product.options.forEach(o => {
@@ -186,6 +233,11 @@
           }
           this.quantity = 1;
           this.showTooltip = true;
+          
+          // Track tooltip open
+          trackEvent(this.product.handle, 'variant_selector_open', {
+            productId: this.product.id
+          });
         } else {
           this.confirmAddToCart();
         }
@@ -214,11 +266,34 @@
         
         this.cartLoading = true;
         
+        // Track add to cart attempt
+        trackEvent(this.product.handle, 'add_to_cart_attempt', {
+          productId: this.product.id,
+          variantId: variantId,
+          quantity: this.quantity
+        });
+        
         try {
           await addToCart(variantId, this.quantity);
+          
+          // Track successful add to cart
+          trackEvent(this.product.handle, 'add_to_cart_success', {
+            productId: this.product.id,
+            variantId: variantId,
+            quantity: this.quantity
+          });
+          
           this.showTooltip = false;
           window.location.reload();
         } catch (error) {
+          // Track failed add to cart
+          trackEvent(this.product.handle, 'add_to_cart_failed', {
+            productId: this.product.id,
+            variantId: variantId,
+            quantity: this.quantity,
+            error: error.message
+          });
+          
           alert(error.message);
           this.cartLoading = false;
         }
@@ -230,16 +305,41 @@
         
         this.buyLoading = true;
         
+        // Track buy now click
+        trackEvent(this.product.handle, 'buy_now_click', {
+          productId: this.product.id,
+          variantId: variantId
+        });
+        
         try {
           await addToCart(variantId, 1);
+          
+          // Track buy now success
+          trackEvent(this.product.handle, 'buy_now_success', {
+            productId: this.product.id,
+            variantId: variantId
+          });
+          
           window.location.href = '/checkout';
         } catch (error) {
+          // Track buy now failed
+          trackEvent(this.product.handle, 'buy_now_failed', {
+            productId: this.product.id,
+            variantId: variantId,
+            error: error.message
+          });
+          
           alert(error.message);
           this.buyLoading = false;
         }
       },
       
       close() {
+        // Track banner close
+        trackEvent(this.product.handle, 'banner_close', {
+          productId: this.product.id
+        });
+        
         this.closed = true;
       }
     };

@@ -30,6 +30,7 @@ export default function App() {
         <Link to="/app/create-static-banner">Create Static Banner</Link>
         <Link to="/app/manage-static-banners">Manage Static Banners</Link>
         <Link to="/app/manage-product-banners">Product Banner Settings</Link>
+        <Link to="/app/product-banner-analytics">Product Banner Analytics</Link>
         <Link to="/app/sync-products">Sync Products</Link>
 
       </NavMenu>
