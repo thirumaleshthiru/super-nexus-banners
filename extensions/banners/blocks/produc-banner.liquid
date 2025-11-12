@@ -107,10 +107,11 @@
   async function fetchBannerData(handle) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
+    const sessionId = getSessionId();
     
     try {
       const response = await fetch(
-        `${CONFIG.API_ENDPOINT}?handle=${encodeURIComponent(handle)}`,
+        `${CONFIG.API_ENDPOINT}?handle=${encodeURIComponent(handle)}&sessionId=${encodeURIComponent(sessionId)}`,
         {
           signal: controller.signal,
           headers: { 'Accept': 'application/json' }
@@ -159,15 +160,17 @@
     return data;
   }
   
-  function createBannerComponent(product) {
+  function createBannerComponent(product, abTest = null) {
     // Track banner view on creation
     trackEvent(product.handle, 'banner_view', {
       productId: product.id,
-      productTitle: product.title
+      productTitle: product.title,
+      testVariantId: abTest?.variantId
     });
     
     return {
       product,
+      abTest,
       cartLoading: false,
       buyLoading: false,
       closed: false,
@@ -220,7 +223,8 @@
         // Track add to cart button click
         trackEvent(this.product.handle, 'add_to_cart_click', {
           productId: this.product.id,
-          hasOptions: this.hasOptions
+          hasOptions: this.hasOptions,
+          testVariantId: this.abTest?.variantId
         });
         
         if (this.hasOptions) {
@@ -236,7 +240,8 @@
           
           // Track tooltip open
           trackEvent(this.product.handle, 'variant_selector_open', {
-            productId: this.product.id
+            productId: this.product.id,
+            testVariantId: this.abTest?.variantId
           });
         } else {
           this.confirmAddToCart();
@@ -270,7 +275,8 @@
         trackEvent(this.product.handle, 'add_to_cart_attempt', {
           productId: this.product.id,
           variantId: variantId,
-          quantity: this.quantity
+          quantity: this.quantity,
+          testVariantId: this.abTest?.variantId
         });
         
         try {
@@ -280,7 +286,8 @@
           trackEvent(this.product.handle, 'add_to_cart_success', {
             productId: this.product.id,
             variantId: variantId,
-            quantity: this.quantity
+            quantity: this.quantity,
+            testVariantId: this.abTest?.variantId
           });
           
           this.showTooltip = false;
@@ -291,7 +298,8 @@
             productId: this.product.id,
             variantId: variantId,
             quantity: this.quantity,
-            error: error.message
+            error: error.message,
+            testVariantId: this.abTest?.variantId
           });
           
           alert(error.message);
@@ -308,7 +316,8 @@
         // Track buy now click
         trackEvent(this.product.handle, 'buy_now_click', {
           productId: this.product.id,
-          variantId: variantId
+          variantId: variantId,
+          testVariantId: this.abTest?.variantId
         });
         
         try {
@@ -317,7 +326,8 @@
           // Track buy now success
           trackEvent(this.product.handle, 'buy_now_success', {
             productId: this.product.id,
-            variantId: variantId
+            variantId: variantId,
+            testVariantId: this.abTest?.variantId
           });
           
           window.location.href = '/checkout';
@@ -326,7 +336,8 @@
           trackEvent(this.product.handle, 'buy_now_failed', {
             productId: this.product.id,
             variantId: variantId,
-            error: error.message
+            error: error.message,
+            testVariantId: this.abTest?.variantId
           });
           
           alert(error.message);
@@ -337,7 +348,8 @@
       close() {
         // Track banner close
         trackEvent(this.product.handle, 'banner_close', {
-          productId: this.product.id
+          productId: this.product.id,
+          testVariantId: this.abTest?.variantId
         });
         
         this.closed = true;
@@ -345,7 +357,7 @@
     };
   }
   
-  function renderBanner(product, settings, customization) {
+  function renderBanner(product, settings, customization, abTest = null) {
     const price = product.price ? `₹ ${product.price}` : '';
     // Use customization if available, otherwise fall back to global settings
     const showPrice = customization ? customization.isShowPrice : (settings ? settings.showPrice : true);
@@ -353,9 +365,14 @@
     const showBuyNow = customization ? customization.isShowBuyNowButton : true;
     const showHurryUp = customization ? customization.isShowHurryUpBanner : true;
     
+    // Get button and hurry up text from settings (for A/B testing variants)
+    const addToCartText = settings?.button1Text || 'Add to Cart';
+    const buyNowText = settings?.button2Text || 'Buy Now';
+    const hurryUpText = settings?.hurryUpText || 'Hurry Up! Limited Stock';
+    
     return `
       <div 
-        x-data="createBannerComponent(${JSON.stringify(product).replace(/"/g, '&quot;')})"
+        x-data="createBannerComponent(${JSON.stringify(product).replace(/"/g, '&quot;')}, ${abTest ? JSON.stringify(abTest).replace(/"/g, '&quot;') : 'null'})"
         @click.outside="showTooltip = false"
       >
         <!-- Hurry Up Banner - Desktop -->
@@ -428,7 +445,7 @@
                   :disabled="cartLoading || (hasOptions && !selectedVariant)"
                 >
                   <span x-show="cartLoading" class="spinner"></span>
-                  <span x-text="cartLoading ? 'Adding...' : 'Add to Cart'"></span>
+                  <span x-text="cartLoading ? 'Adding...' : '${addToCartText.replace(/'/g, "\\'")}'"></span>
                 </button>
               </div>
               
@@ -437,7 +454,7 @@
                 @click="handleAddToCartClick()"
                 class="mobile-add-cart-btn"
               >
-                Add to Cart
+                ${addToCartText}
               </button>
               ` : ''}
             </div>
@@ -513,7 +530,7 @@
                       :disabled="cartLoading || (hasOptions && !selectedVariant)"
                     >
                       <span x-show="cartLoading" class="spinner"></span>
-                      <span x-text="cartLoading ? 'Adding...' : 'Add to Cart'"></span>
+                      <span x-text="cartLoading ? 'Adding...' : '${addToCartText.replace(/'/g, "\\'")}'"></span>
                     </button>
                   </div>
                   
@@ -522,7 +539,7 @@
                     @click="handleAddToCartClick()"
                     class="product-banner-btn product-banner-btn-cart"
                   >
-                    Add to Cart
+                    ${addToCartText}
                   </button>
                   ` : ''}
                 </div>
@@ -534,7 +551,7 @@
                   class="product-banner-btn product-banner-btn-buy"
                 >
                   <span x-show="buyLoading" class="spinner"></span>
-                  <span x-text="buyLoading ? 'Processing...' : 'Buy Now'"></span>
+                  <span x-text="buyLoading ? 'Processing...' : '${buyNowText.replace(/'/g, "\\'")}'"></span>
                 </button>
                 ` : ''}
               </div>
@@ -674,7 +691,7 @@
       applyBannerSettings(data.settings);
       
       const container = document.createElement('div');
-      container.innerHTML = renderBanner(data.product, data.settings, data.customization);
+      container.innerHTML = renderBanner(data.product, data.settings, data.customization, data.abTest);
       document.body.appendChild(container);
       
     } catch (error) {

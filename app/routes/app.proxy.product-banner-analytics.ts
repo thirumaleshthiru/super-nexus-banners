@@ -16,7 +16,8 @@ export const action: ActionFunction = async ({ request }) => {
       sessionId,
       variantId,
       quantity,
-      metadata
+      metadata,
+      testVariantId
     } = body;
 
     // Validate required fields
@@ -42,6 +43,7 @@ export const action: ActionFunction = async ({ request }) => {
         variantId: variantId || undefined,
         quantity: quantity || undefined,
         metadata: metadata ? JSON.stringify(metadata) : undefined,
+        testVariantId: testVariantId || undefined,
       },
     });
 

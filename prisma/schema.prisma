@@ -389,6 +389,7 @@ model ProductBannerAnalytics {
   variantId       String?
   quantity        Int?
   metadata        String?
+  testVariantId   String?
   createdAt       DateTime @default(now())
 
   @@index([productId])
@@ -396,4 +397,91 @@ model ProductBannerAnalytics {
   @@index([eventType])
   @@index([timestamp])
   @@index([sessionId])
+  @@index([testVariantId])
+}
+
+model ProductBannerTest {
+  id                    String                   @id @default(cuid())
+  name                  String
+  productId             String
+  productHandle         String
+  status                String                   @default("draft") // draft, running, paused, completed
+  startDate             DateTime?
+  endDate               DateTime?
+  goalMetric            String                   @default("conversion_rate") // conversion_rate, clicks, add_to_cart
+  minSampleSize         Int                      @default(100)
+  confidenceLevel       Float                    @default(95.0)
+  trafficAllocation     Float                    @default(100.0) // percentage of traffic to include in test
+  winnerVariantId       String?
+  autoSelectWinner      Boolean                  @default(true)
+  notes                 String?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  variants              ProductBannerVariant[]
+
+  @@index([productId])
+  @@index([productHandle])
+  @@index([status])
+}
+
+model ProductBannerVariant {
+  id                           String              @id @default(cuid())
+  testId                       String
+  name                         String              // "Control (A)", "Variant B", etc.
+  trafficWeight                Float               @default(50.0) // percentage split
+  isControl                    Boolean             @default(false)
+  
+  // Banner settings for this variant
+  bannerHeight                 String              @default("80")
+  bannerImageHeight            String              @default("80")
+  bannerBackgroundColor        String              @default("FF6B6B")
+  bannerTextColor              String              @default("ffffff")
+  bannerPriceColor             String              @default("ffffff")
+  bannerBorderRadius           String              @default("12")
+  bannerPadding                String              @default("10")
+  
+  // Add to Cart button
+  buttonText                   String              @default("Add to Cart")
+  buttonBackgroundColor        String              @default("ffffff")
+  buttonTextColor              String              @default("FF6B6B")
+  buttonBorderRadius           String              @default("6")
+  buttonFontSize               String              @default("16")
+  buttonHeight                 String              @default("45")
+  
+  // Buy Now button
+  buyNowButtonText             String              @default("Buy Now")
+  buyNowButtonBackgroundColor  String              @default("ffffff")
+  buyNowButtonTextColor        String              @default("FF6B6B")
+  buyNowButtonBorderRadius     String              @default("6")
+  buyNowButtonFontSize         String              @default("16")
+  buyNowButtonHeight           String              @default("45")
+  
+  hurryUpText                  String              @default("Hurry Up! Limited Stock")
+  hurryUpBackgroundColor       String              @default("ffffff")
+  hurryUpTextColor             String              @default("FF6B6B")
+  hurryUpFontSize              String              @default("14")
+  hurryUpHeight                String              @default("35")
+  
+  pricePosition                String              @default("top-right")
+  priceFontSize                String              @default("18")
+  
+  isShowPrice                  Boolean             @default(true)
+  isShowAddToCartButton        Boolean             @default(true)
+  isShowBuyNowButton           Boolean             @default(true)
+  isShowHurryUpBanner          Boolean             @default(true)
+  
+  // Performance metrics
+  views                        Int                 @default(0)
+  clicks                       Int                 @default(0)
+  addToCarts                   Int                 @default(0)
+  buyNows                      Int                 @default(0)
+  conversions                  Int                 @default(0)
+  conversionRate               Float               @default(0.0)
+  
+  createdAt                    DateTime            @default(now())
+  updatedAt                    DateTime            @updatedAt
+  test                         ProductBannerTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([testId])
+  @@index([isControl])
 }
