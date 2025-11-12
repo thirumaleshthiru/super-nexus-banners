@@ -14,7 +14,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }, { status: 400 });
     }
 
-    // Fetch product from database
+    // Fetch product from database with customization
     const product = await prisma.product.findUnique({
       where: { handle: productHandle },
       select: {
@@ -30,7 +30,8 @@ export const loader: LoaderFunction = async ({ request }) => {
         description: true,
         inventoryQuantity: true,
         inventoryTracked: true,
-        lowStockThreshold: true
+        lowStockThreshold: true,
+        productBannerCustomization: true
       }
     });
 
@@ -63,6 +64,9 @@ export const loader: LoaderFunction = async ({ request }) => {
       orderBy: { createdAt: 'desc' }
     });
 
+    // Get product customization if exists
+    const customization = product.productBannerCustomization
+
     // If no settings exist, return null - liquid file will use its own defaults
     if (!bannerSettings) {
       return json({
@@ -81,7 +85,13 @@ export const loader: LoaderFunction = async ({ request }) => {
           inventoryTracked: product.inventoryTracked,
           shouldShowLowStock: shouldShowLowStock
         },
-        settings: null
+        settings: null,
+        customization: customization ? {
+          isShowPrice: customization.isShowPrice,
+          isShowAddToCartButton: customization.isShowAddToCartButton,
+          isShowBuyNowButton: customization.isShowBuyNowButton,
+          isShowHurryUpBanner: customization.isShowHurryUpBanner,
+        } : null
       });
     }
 
@@ -105,6 +115,7 @@ export const loader: LoaderFunction = async ({ request }) => {
         // Send ACTUAL database values - no fallbacks
         bannerHeight: bannerSettings.bannerHeight,
         bannerImageHeight: bannerSettings.bannerImageHeight,
+        bannerPadding: bannerSettings.bannerPadding,
         bannerTitleFontSize: bannerSettings.bannerTitleFontSize,
         bannerTitleColor: bannerSettings.bannerTitleColor,
         bannerPriceFontSize: bannerSettings.bannerPriceFontSize,
@@ -139,6 +150,12 @@ export const loader: LoaderFunction = async ({ request }) => {
         mobileHurryUpFontSize: bannerSettings.mobileHurryUpFontSize,
         mobileHurryUpBackgroundColor: bannerSettings.mobileHurryUpBackgroundColor,
         mobileHurryUpTextColor: bannerSettings.mobileHurryUpTextColor,
+      } : null,
+      customization: customization ? {
+        isShowPrice: customization.isShowPrice,
+        isShowAddToCartButton: customization.isShowAddToCartButton,
+        isShowBuyNowButton: customization.isShowBuyNowButton,
+        isShowHurryUpBanner: customization.isShowHurryUpBanner,
       } : null
     });
   } catch (err) {

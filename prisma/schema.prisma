@@ -26,33 +26,34 @@ model Session {
 }
 
 model Product {
-  id                 String              @id @default(cuid())
-  shopifyId          String              @unique
-  title              String
-  handle             String              @unique
-  description        String?
-  featuredImage      String?
-  optimizedImage     String?
-  imageAltTag        String?
-  originalImageSize  Int?
-  optimizedImageSize Int?
-  price              String
-  currencyCode       String              @default("USD")
-  status             String              @default("active")
-  vendor             String?
-  productType        String?
-  tags               String?
-  variantId          String?
-  variants           String?
-  inventoryQuantity  Int?
-  inventoryTracked   Boolean             @default(true)
-  lowStockThreshold  Int                 @default(5)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  banners            Banner[]
-  bannerSlides       BannerSlide[]
-  bottomBanners      BottomBanner[]
-  bottomBannerSlides BottomBannerSlide[]
+  id                      String                        @id @default(cuid())
+  shopifyId               String                        @unique
+  title                   String
+  handle                  String                        @unique
+  description             String?
+  featuredImage           String?
+  optimizedImage          String?
+  imageAltTag             String?
+  originalImageSize       Int?
+  optimizedImageSize      Int?
+  price                   String
+  currencyCode            String                        @default("USD")
+  status                  String                        @default("active")
+  vendor                  String?
+  productType             String?
+  tags                    String?
+  variantId               String?
+  variants                String?
+  inventoryQuantity       Int?
+  inventoryTracked        Boolean                       @default(true)
+  lowStockThreshold       Int                           @default(5)
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+  banners                 Banner[]
+  bannerSlides            BannerSlide[]
+  bottomBanners           BottomBanner[]
+  bottomBannerSlides      BottomBannerSlide[]
+  productBannerCustomization ProductBannerCustomization?
 }
 
 model Banner {
@@ -323,6 +324,7 @@ model ProductBannerSettings {
   id                           String   @id @default(cuid())
   bannerHeight                 String   @default("130")
   bannerImageHeight            String   @default("80")
+  bannerPadding                String   @default("10")
   bannerTitleFontSize          String   @default("15")
   bannerTitleColor             String   @default("111827")
   bannerPriceFontSize          String   @default("14")
@@ -359,4 +361,39 @@ model ProductBannerSettings {
   mobileHurryUpTextColor       String   @default("ffffff")
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt
+}
+
+model ProductBannerCustomization {
+  id                   String   @id @default(cuid())
+  productId            String   @unique
+  isShowPrice          Boolean  @default(true)
+  isShowAddToCartButton Boolean @default(true)
+  isShowBuyNowButton   Boolean  @default(true)
+  isShowHurryUpBanner  Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  product              Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductBannerAnalytics {
+  id              String   @id @default(cuid())
+  productId       String
+  productHandle   String
+  eventType       String
+  timestamp       DateTime @default(now())
+  sessionId       String?
+  userAgent       String?
+  deviceType      String?
+  variantId       String?
+  quantity        Int?
+  metadata        String?
+  createdAt       DateTime @default(now())
+
+  @@index([productId])
+  @@index([productHandle])
+  @@index([eventType])
+  @@index([timestamp])
+  @@index([sessionId])
 }

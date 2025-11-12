@@ -1,879 +1,11 @@
 {% comment %}
-  Product Banner System - With Quantity Selector
-  Clean, simple design with quantity selection before cart addition
+  Product Banner System - Tooltip Variant Selector
+  Clean, modern design with tooltip above Add to Cart button
 {% endcomment %}
 
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-<style>
-  /* Reset and base styles */
-  #product-banner-spacer {
-    height: var(--banner-height);
-    width: 100%;
-  }
-  
-  /* Hurry Up Banner - Above product banner at bottom */
-  .hurry-up-banner {
-    position: fixed;
-    bottom: 100px;
-    left: 0;
-    right: 0;
-    height: var(--hurry-up-height);
-    background: var(--hurry-up-bg-color);
-    color: var(--hurry-up-text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--hurry-up-font-size);
-    font-weight: 600;
-    z-index: 1000000;
-    width: 100%;
-  }
-  
-  /* Mobile: Single banner with Hurry Up + Product */
-  .mobile-banner {
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border-radius: var(--mobile-banner-radius);
-    margin: var(--mobile-banner-margin);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    font-family: inherit;
-    height: var(--mobile-banner-height);
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-  }
-  
-  .mobile-hurry-up {
-    height: var(--mobile-hurry-up-height);
-    background: var(--mobile-hurry-up-bg-color);
-    color: var(--mobile-hurry-up-text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--mobile-hurry-up-font-size);
-    font-weight: 600;
-    border-radius: var(--mobile-banner-radius) var(--mobile-banner-radius) 0 0;
-    font-family: inherit;
-  }
-  
-  .mobile-product {
-    min-height: var(--mobile-product-height);
-    padding: var(--mobile-product-padding);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  
-  .mobile-product-info {
-    flex: 1;
-  }
-  
-  .mobile-product-title {
-    font-size: var(--mobile-title-font-size);
-    font-weight: 600;
-    color: var(--mobile-title-color);
-    margin: 0 0 4px 0;
-    font-family: inherit;
-    line-height: 1.4;
-    white-space: normal;
-    overflow: visible;
-    word-wrap: break-word;
-  }
-  
-  .mobile-product-price {
-    font-size: var(--mobile-price-font-size);
-    color: var(--mobile-price-color);
-    margin: 0;
-    font-family: inherit;
-    line-height: 1.4;
-  }
-  
-  .mobile-add-cart-btn {
-    background: var(--mobile-button-bg-color);
-    color: var(--mobile-button-text-color);
-    border: none;
-    padding: var(--mobile-button-padding);
-    border-radius: var(--mobile-button-radius);
-    font-size: var(--mobile-button-font-size);
-    font-weight: 600;
-    cursor: pointer;
-    min-width: 120px;
-    height: var(--mobile-button-height);
-    align-self: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: inherit;
-    text-transform: none;
-    letter-spacing: normal;
-    outline: none;
-  }
-  
-  .mobile-add-cart-btn:focus {
-    outline: none;
-    box-shadow: none;
-  }
-  
-  /* Quantity Selector Styles */
-  .quantity-selector {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-    border: none !important;
-    background: none !important;
-    padding: 0;
-    margin: 0;
-    outline: none;
-  }
-  
-  .quantity-btn {
-    width: 36px;
-    height: 36px;
-    border: none;
-    background: transparent;
-    color: var(--button1-bg-color);
-    border-radius: 8px;
-    font-size: 20px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    padding: 0;
-    line-height: 1;
-  }
-  
-  .quantity-btn:focus {
-    one;
-    box-shadow: none;
-  }
-  
-  .quantity-btn:hover:not(:disabled) {
-    background: transparent;
-    color: var(--button1-bg-color);
-    opacity: 0.7;
-  }
-  
-  .quantity-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-  
-  .quantity-display {
-    min-width: 40px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: 600;
-    color: #111827;
-    border: none !important;
-    background: none !important;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .confirm-btn {
-    background: var(--button1-bg-color);
-    color: var(--button1-text-color);
-    border: 2px solid var(--button1-border-color);
-    padding: 10px 24px;
-    border-radius: 15px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    min-width: 140px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    outline: none;
-    font-family: inherit;
-  }
-  
-  .confirm-btn:focus {
-    outline: none;
-    box-shadow: none;
-  }
-  
-  .confirm-btn:hover:not(:disabled) {
-    background: var(--button1-bg-color-hover, #FF5252);
-    border-color: var(--button1-border-color-hover, #FF5252);
-  }
-  
-  .confirm-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* Popup modal for options + quantity */
-  .pb-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000001;
-    font-family: inherit;
-  }
-  .pb-modal {
-    width: 90%;
-    max-width: 420px;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    padding: 18px;
-    font-family: inherit;
-  }
-  .pb-modal-title {
-    font-size: 16px;
-    font-weight: 700;
-    margin: 0 0 10px 0;
-    color: #111827;
-    font-family: inherit;
-  }
-  .pb-option-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 12px;
-    font-family: inherit;
-  }
-  .pb-option-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #374151;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    font-family: inherit;
-  }
-  .pb-select {
-    padding: 10px 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 14px;
-    outline: none;
-    font-family: inherit;
-  }
-  .pb-actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-top: 8px;
-  }
-  
-  /* Mobile popup layout - column */
-  @media (max-width: 768px) {
-    .pb-modal {
-      width: 95%;
-      max-width: none;
-      padding: 16px;
-    }
-    .pb-actions {
-      flex-direction: column;
-      gap: 12px;
-      align-items: stretch;
-    }
-    .pb-actions > div {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-    .pb-actions .quantity-selector {
-      justify-content: center;
-    }
-    .pb-actions > div:last-child {
-      display: flex;
-      flex-direction: row;
-      gap: 8px;
-    }
-    .pb-cancel-btn,
-    .confirm-btn {
-      flex: 1;
-      min-width: 0;
-    }
-  }
-  .pb-cancel-btn {
-    background: #f3f4f6;
-    color: #111827;
-    border: 1px solid #e5e7eb;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  
-  /* Mobile Quantity Selector */
-  .mobile-quantity-selector {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border: none !important;
-    background: none !important;
-    padding: 0;
-    margin: 0;
-    outline: none;
-  }
-  
-  .mobile-quantity-btn {
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    color: var(--mobile-button-bg-color);
-    border-radius: 6px;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    padding: 0;
-    line-height: 1;
-    outline: none;
-  }
-  
-  .mobile-quantity-btn:focus {
-    outline: none;
-    box-shadow: none;
-  }
-  
-  .mobile-quantity-btn:hover:not(:disabled) {
-    background: transparent;
-    color: var(--mobile-button-bg-color);
-    opacity: 0.7;
-  }
-  
-  .mobile-quantity-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-  
-  .mobile-quantity-display {
-    min-width: 30px;
-    text-align: center;
-    font-size: 16px;
-    font-weight: 600;
-    color: #111827;
-    border: none !important;
-    background: none !important;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .mobile-confirm-btn {
-    background: var(--mobile-button-bg-color);
-    color: var(--mobile-button-text-color);
-    border: none;
-    padding: 10px 20px;
-    border-radius: var(--mobile-button-radius);
-    font-size: var(--mobile-button-font-size);
-    font-weight: 600;
-    cursor: pointer;
-    min-width: 100px;
-    height: var(--mobile-button-height);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: inherit;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    outline: none;
-  }
-  
-  .mobile-confirm-btn:focus {
-    outline: none;
-    box-shadow: none;
-  }
-  
-  .mobile-confirm-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .hurry-up-banner .stock-number {
-    background: #fff;
-    color: #FF6B6B;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-weight: 700;
-    margin: 0 2px;
-  }
-  
-  @keyframes slideUp {
-    from {
-      transform: translateX(-50%) translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    @keyframes slideUp {
-      from {
-        transform: translateY(20px);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-  }
-  
-  /* Mobile responsive design */
-  @media (max-width: 768px) {
-    .hurry-up-banner {
-      display: none;
-    }
-    
-    .product-banner-fixed-wrapper {
-      display: none;
-    }
-    
-    .mobile-banner {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      z-index: 1000;
-      border-top: 1px solid #e5e7eb;
-      padding: 0;
-    }
-    
-    #product-banner-spacer {
-      height: 120px;
-    }
-    
-    .mobile-product {
-      padding: 16px;
-      gap: 16px;
-      align-items: center;
-      min-height: 80px;
-    }
-    
-    .mobile-product-info {
-      flex: 1;
-      min-width: 0;
-      overflow: visible;
-    }
-    
-    .mobile-product-title {
-      font-size: 16px;
-      line-height: 1.3;
-      margin-bottom: 6px;
-      white-space: normal;
-      overflow: visible;
-      word-wrap: break-word;
-    }
-    
-    .mobile-product-price {
-      font-size: 14px;
-      font-weight: 500;
-    }
-    
-    .mobile-product-actions {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      flex-shrink: 0;
-      flex-wrap: nowrap;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .mobile-hurry-up {
-      font-size: 12px;
-      padding: 8px 12px;
-    }
-    
-    .mobile-product {
-      padding: 12px;
-      gap: 12px;
-      min-height: 70px;
-    }
-    
-    .mobile-product-title {
-      font-size: 15px;
-      line-height: 1.2;
-      margin-bottom: 4px;
-    }
-    
-    .mobile-product-price {
-      font-size: 13px;
-    }
-    
-    .mobile-add-cart-btn {
-      font-size: 13px;
-      padding: 8px 12px;
-      min-width: 80px;
-      height: 32px;
-    }
-    
-    .mobile-quantity-btn {
-      width: 28px;
-      height: 28px;
-      font-size: 16px;
-      outline: none;
-    }
-    
-    .mobile-quantity-btn:focus {
-      outline: none;
-      box-shadow: none;
-    }
-    
-    .mobile-quantity-display {
-      font-size: 14px;
-      min-width: 25px;
-    }
-    
-    .mobile-confirm-btn {
-      font-size: 13px;
-      padding: 8px 12px;
-      min-width: 80px;
-      height: 32px;
-      outline: none;
-    }
-    
-    .mobile-confirm-btn:focus {
-      outline: none;
-      box-shadow: none;
-    }
-  }
-  
-  @media (max-width: 360px) {
-    .mobile-hurry-up {
-      font-size: 11px;
-    }
-    
-    .mobile-product-title {
-      font-size: 13px;
-    }
-    
-    .mobile-product-price {
-      font-size: 11px;
-    }
-    
-    .mobile-add-cart-btn {
-      font-size: 13px;
-      padding: 8px 12px;
-      min-width: 90px;
-      height: 32px;
-    }
-    
-    .mobile-quantity-btn {
-      width: 26px;
-      height: 26px;
-      font-size: 14px;
-    }
-    
-    .mobile-confirm-btn {
-      font-size: 13px;
-      padding: 6px 12px;
-      min-width: 80px;
-      height: 32px;
-    }
-  }
-  
-  .product-banner-fixed-wrapper {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 999999 !important;
-    background: #ffffff;
-  }
-  
-  .product-banner-container {
-    max-width: var(--theme-max-width, 1400px);
-    margin: 0 auto;
-    padding: 12px var(--theme-padding, 20px);
-    box-sizing: border-box;
-  }
-  
-  [x-cloak] { display: none !important; }
-  
-  .product-banner-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-  }
-  
-  .product-banner-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-width: 0;
-  }
-  
-  .product-banner-image {
-    width: var(--banner-image-width);
-    height: var(--banner-image-height);
-    border-radius: 8px;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-  }
-  
-  .product-banner-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .product-banner-info {
-    flex: 1;
-    min-width: 0;
-  }
-  
-  .product-banner-title {
-    font-size: var(--banner-title-font-size);
-    font-weight: 600;
-    color: var(--banner-title-color);
-    line-height: 1.4;
-    margin: 0 0 2px 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .product-banner-price {
-    font-size: var(--banner-price-font-size);
-    color: var(--banner-price-color);
-    margin: 0;
-  }
-  
-  .product-banner-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-  
-  .product-banner-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 15px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    min-width: 180px;
-    height: 45px;
-  }
-  
-  .product-banner-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .product-banner-btn-cart {
-    background: var(--button1-bg-color);
-    color: var(--button1-text-color);
-    border: 2px solid var(--button1-border-color);
-    outline: none;
-  }
-  
-  .product-banner-btn-cart:hover:not(:disabled) {
-    background: var(--button1-bg-color-hover, #FF5252);
-    border-color: var(--button1-border-color-hover, #FF5252);
-  }
-  
-  .product-banner-btn-cart:focus {
-    outline: none;
-    box-shadow: none;
-  }
-  
-  .product-banner-btn-buy {
-    background: var(--button2-bg-color);
-    color: var(--button2-text-color);
-    border: 2px solid var(--button2-border-color);
-    outline: none;
-  }
-  
-  .product-banner-btn-buy:hover:not(:disabled) {
-    background: var(--button2-bg-color-hover, #FF6B6B);
-    color: var(--button2-text-color-hover, #ffffff);
-  }
-  
-  .product-banner-btn-buy:focus {
-    outline: none;
-    box-shadow: none;
-  }
-  
-  .product-banner-spinner {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: #ffffff;
-    animation: pb-spin 0.6s linear infinite;
-    margin-right: 6px;
-  }
-  
-  .product-banner-btn-buy .product-banner-spinner {
-    border: 2px solid rgba(0, 0, 0, 0.3);
-    border-top-color: #000000;
-  }
-  
-  @keyframes pb-spin {
-    to { transform: rotate(360deg); }
-  }
-  
-  .product-banner-close {
-    display: none;
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: transparent;
-    border: none;
-    color: #9ca3af;
-    cursor: pointer;
-    font-size: 24px;
-    line-height: 1;
-    padding: 4px;
-    z-index: 10;
-  }
-  
-  .product-banner-close:hover {
-    color: #4b5563;
-  }
-  
-  /* Mobile styles - EXACT Figma specifications */
-  @media (max-width: 768px) {
-    #product-banner-spacer {
-      height: 120px;
-    }
-    
-    .product-banner-fixed-wrapper {
-      position: fixed !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      z-index: 999999 !important;
-    }
-    
-    .product-banner-container {
-      padding: 14px;
-      position: relative;
-    }
-    
-    .product-banner-content {
-      flex-direction: column;
-      gap: 14px;
-      align-items: stretch;
-    }
-    
-    .product-banner-left {
-      width: 100%;
-      flex-direction: column;
-      text-align: center;
-      gap: 8px;
-    }
-    
-    .product-banner-image {
-      width: 80px;
-      height: 60px;
-      margin: 0 auto;
-    }
-    
-    .product-banner-title {
-      white-space: normal;
-      overflow: visible;
-      text-align: center;
-      
-    }
-    
-    .product-banner-actions {
-      width: 100%;
-      gap: 10px;
-      flex-direction: column;
-    }
-    
-    .product-banner-btn {
-      width: 100%;
-      min-width: 140px;
-      height: 35px;
-      padding: 8px 16px;
-      font-size: 13px;
-      border-radius: 10px;
-    }
-    
-    .product-banner-close {
-      display: block;
-    }
-    
-    .quantity-selector {
-      justify-content: center;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .product-banner-image {
-      width: 50px;
-      height: 50px;
-    }
-    
-    .product-banner-title {
-      font-size: 14px;
-    }
-    
-    .product-banner-price {
-      font-size: 13px;
-    }
-    
-    .product-banner-btn {
-      font-size: 12px;
-      padding: 8px 14px;
-      min-width: 120px;
-      height: 32px;
-    }
-    
-    .quantity-btn {
-      width: 32px;
-      height: 32px;
-      font-size: 18px;
-    }
-    
-    .quantity-display {
-      font-size: 16px;
-      min-width: 35px;
-    }
-    
-    .confirm-btn {
-      min-width: 120px;
-      height: 38px;
-      font-size: 13px;
-    }
-  }
-</style>
+{{ 'style.css' | asset_url | stylesheet_tag }}
 
 <div id="product-banner-root"></div>
 
@@ -883,47 +15,8 @@
   
   const CONFIG = {
     API_ENDPOINT: '/apps/banners-1/activeproductbanners',
-    TIMEOUT: 5000,
-    THEME_SELECTORS: [
-      '.page-width',
-      '.container',
-      'main > .container',
-      '.main-content',
-      '#MainContent',
-      '.shopify-section .container',
-      '.site-width',
-      'main',
-      '[class*="page-width"]',
-      '[class*="container"]'
-    ]
+    TIMEOUT: 5000
   };
-  
-  function extractThemeStyles() {
-    for (const selector of CONFIG.THEME_SELECTORS) {
-      const element = document.querySelector(selector);
-      if (!element) continue;
-      
-      const styles = window.getComputedStyle(element);
-      const maxWidth = styles.maxWidth;
-      const paddingLeft = styles.paddingLeft;
-      const paddingRight = styles.paddingRight;
-      
-      if (maxWidth && maxWidth !== 'none') {
-        return {
-          maxWidth,
-          padding: paddingLeft
-        };
-      }
-    }
-    
-    return { maxWidth: '1400px', padding: '20px' };
-  }
-  
-  function applyThemeStyles(container) {
-    const themeStyles = extractThemeStyles();
-    document.documentElement.style.setProperty('--theme-max-width', themeStyles.maxWidth);
-    document.documentElement.style.setProperty('--theme-padding', themeStyles.padding);
-  }
   
   function getCurrentProductHandle() {
     const metaOgUrl = document.querySelector('meta[property="og:url"]');
@@ -947,27 +40,29 @@
       const r = await fetch(`/products/${handle}.js`);
       if (!r.ok) return null;
       const p = await r.json();
+      
       let options = (p.options || []).map((opt, i) => ({
         name: opt.name,
         position: i + 1,
         values: Array.isArray(opt.values) ? Array.from(new Set(opt.values)) : []
       }));
-      // Filter out Shopify's placeholder option (Title → Default Title)
+      
       options = options.filter(o => {
         const isPlaceholder = (o.name || '').toLowerCase() === 'title' &&
           (!o.values || o.values.length <= 1) &&
           (o.values?.[0] || '').toLowerCase() === 'default title';
         return !isPlaceholder;
       });
+      
       const variantsWithOptions = (p.variants || []).map(v => ({
         id: v.id,
         available: v.available,
         price: v.price,
         option1: v.option1,
         option2: v.option2,
-        option3: v.option3,
-        inventory_quantity: v.inventory_quantity || null
+        option3: v.option3
       }));
+      
       return { options, variantsWithOptions };
     } catch (_e) {
       return null;
@@ -1035,13 +130,13 @@
       cartLoading: false,
       buyLoading: false,
       closed: false,
-      showQuantitySelector: false,
-      showModal: false,
+      showTooltip: false,
       quantity: 1,
       selectedOptions: {},
 
       get hasOptions() {
-        return Array.isArray(this.product.options) && this.product.options.some(o => Array.isArray(o.values) && o.values.length > 0);
+        return Array.isArray(this.product.options) && 
+               this.product.options.some(o => Array.isArray(o.values) && o.values.length > 0);
       },
 
       get selectedVariant() {
@@ -1081,9 +176,7 @@
       },
       
       handleAddToCartClick() {
-        // If there are options, open modal
         if (this.hasOptions) {
-          // Initialize defaults if not chosen
           if (this.product.options) {
             this.product.options.forEach(o => {
               if (!this.selectedOptions[o.position] && o.values && o.values.length) {
@@ -1092,13 +185,10 @@
             });
           }
           this.quantity = 1;
-          this.showModal = true;
-          this.showQuantitySelector = false;
-          return;
+          this.showTooltip = true;
+        } else {
+          this.confirmAddToCart();
         }
-        // No options → inline quantity
-        this.showQuantitySelector = true;
-        this.quantity = 1;
       },
       
       incrementQuantity() {
@@ -1116,14 +206,17 @@
       async confirmAddToCart() {
         const variantId = this.selectedVariantId || this.product.variantId;
         if (this.cartLoading || this.buyLoading || !variantId) return;
+        
         if (this.hasOptions && !this.selectedVariantAvailable) {
           alert('Selected variant is unavailable');
           return;
         }
+        
         this.cartLoading = true;
+        
         try {
           await addToCart(variantId, this.quantity);
-          this.showModal = false;
+          this.showTooltip = false;
           window.location.reload();
         } catch (error) {
           alert(error.message);
@@ -1134,13 +227,11 @@
       async handleBuyNow() {
         const variantId = this.selectedVariantId || this.product.variantId;
         if (this.cartLoading || this.buyLoading || !variantId) return;
-        if (this.hasOptions && !this.selectedVariantAvailable) {
-          alert('Selected variant is unavailable');
-          return;
-        }
+        
         this.buyLoading = true;
+        
         try {
-          await addToCart(variantId);
+          await addToCart(variantId, 1);
           window.location.href = '/checkout';
         } catch (error) {
           alert(error.message);
@@ -1150,78 +241,44 @@
       
       close() {
         this.closed = true;
-        const hurryUpBanner = document.querySelector('.hurry-up-banner');
-        if (hurryUpBanner) {
-          hurryUpBanner.style.display = 'none';
-        }
       }
     };
   }
   
-  function renderBanner(product, settings) {
+  function renderBanner(product, settings, customization) {
     const price = product.price ? `₹ ${product.price}` : '';
-    const showPrice = settings ? settings.showPrice : true;
+    // Use customization if available, otherwise fall back to global settings
+    const showPrice = customization ? customization.isShowPrice : (settings ? settings.showPrice : true);
+    const showAddToCart = customization ? customization.isShowAddToCartButton : true;
+    const showBuyNow = customization ? customization.isShowBuyNowButton : true;
+    const showHurryUp = customization ? customization.isShowHurryUpBanner : true;
     
     return `
       <div 
         x-data="createBannerComponent(${JSON.stringify(product).replace(/"/g, '&quot;')})"
-        x-init=""
+        @click.outside="showTooltip = false"
       >
-        <!-- Hurry Up Banner - 30px height at top -->
+        <!-- Hurry Up Banner - Desktop -->
+        ${showHurryUp ? `
         <div 
-          x-show="product.shouldShowLowStock"
+          x-show="product.shouldShowLowStock && !closed"
           x-cloak
           class="hurry-up-banner"
         >
-          <div class="inventory-text" x-html="inventoryMessage">
-          </div>
+          <div x-html="inventoryMessage"></div>
         </div>
+        ` : ''}
         
-        <!-- Options + Quantity Modal -->
-        <div class="pb-overlay" x-show="showModal" x-cloak @click.self="showModal=false">
-          <div class="pb-modal" role="dialog" aria-modal="true">
-            <div class="pb-modal-title">Select options</div>
-            <template x-if="hasOptions">
-              <div>
-                <template x-for="opt in product.options" :key="opt.position">
-                  <div class="pb-option-group">
-                    <label class="pb-option-label" x-text="opt.name"></label>
-                    <select class="pb-select" :value="selectedOptions[opt.position]" @change="selectedOptions[opt.position]=$event.target.value">
-                      <template x-for="val in opt.values" :key="val">
-                        <option :value="val" x-text="val"></option>
-                      </template>
-                    </select>
-                  </div>
-                </template>
-              </div>
-            </template>
-            <div class="pb-actions">
-              <div class="quantity-selector">
-                <button @click="decrementQuantity()" :disabled="quantity<=1" class="quantity-btn">−</button>
-                <span class="quantity-display" x-text="quantity"></span>
-                <button @click="incrementQuantity()" :disabled="quantity>=maxQuantity" class="quantity-btn">+</button>
-              </div>
-              <div style="display:flex; gap:8px; align-items:center;">
-                <button class="pb-cancel-btn" @click="showModal=false">Cancel</button>
-                <button class="confirm-btn" @click="confirmAddToCart()" :disabled="cartLoading || (hasOptions && !selectedVariant)">
-                  <span x-show="cartLoading" class="product-banner-spinner"></span>
-                  <span x-text="cartLoading ? 'Adding...' : 'Confirm'"></span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mobile Banner - Single component -->
-        <div class="mobile-banner">
+        <!-- Mobile Banner -->
+        <div class="mobile-banner" x-show="!closed" x-cloak>
+          ${showHurryUp ? `
           <div 
             x-show="product.shouldShowLowStock"
-            x-cloak
             class="mobile-hurry-up"
           >
-            <div class="inventory-text" x-html="inventoryMessage">
-            </div>
+            <div x-html="inventoryMessage"></div>
           </div>
+          ` : ''}
           
           <div class="mobile-product">
             <div class="mobile-product-info">
@@ -1229,111 +286,157 @@
               ${showPrice ? `<div class="mobile-product-price" x-text="product.price ? '₹ ' + product.price : ''"></div>` : ''}
             </div>
             
-            <!-- Mobile: Show quantity selector or add to cart button -->
             <div class="mobile-product-actions">
-              <div x-show="!showQuantitySelector">
+              <!-- Mobile Tooltip -->
+              <div x-show="showTooltip" x-cloak class="variant-tooltip">
+                <div class="tooltip-header">
+                  <h4 class="tooltip-title">Select Options</h4>
+                  <button @click="showTooltip = false" class="tooltip-close">&times;</button>
+                </div>
+                
+                <template x-if="hasOptions">
+                  <div>
+                    <template x-for="opt in product.options" :key="opt.position">
+                      <div class="option-group">
+                        <label class="option-label" x-text="opt.name"></label>
+                        <select 
+                          class="option-select" 
+                          :value="selectedOptions[opt.position]" 
+                          @change="selectedOptions[opt.position]=$event.target.value"
+                        >
+                          <template x-for="val in opt.values" :key="val">
+                            <option :value="val" x-text="val"></option>
+                          </template>
+                        </select>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+                
+                <div class="quantity-section">
+                  <span class="quantity-label">Quantity</span>
+                  <div class="quantity-controls">
+                    <button @click="decrementQuantity()" :disabled="quantity<=1" class="quantity-btn">−</button>
+                    <span class="quantity-display" x-text="quantity"></span>
+                    <button @click="incrementQuantity()" :disabled="quantity>=maxQuantity" class="quantity-btn">+</button>
+                  </div>
+                </div>
+                
                 <button 
-                  @click="handleAddToCartClick()"
-                  class="mobile-add-cart-btn"
+                  class="tooltip-confirm-btn" 
+                  @click="confirmAddToCart()" 
+                  :disabled="cartLoading || (hasOptions && !selectedVariant)"
                 >
-                  Add to Cart
+                  <span x-show="cartLoading" class="spinner"></span>
+                  <span x-text="cartLoading ? 'Adding...' : 'Add to Cart'"></span>
                 </button>
               </div>
               
-              <div x-show="showQuantitySelector" x-cloak class="mobile-quantity-selector">
-                <button 
-                  @click="decrementQuantity()"
-                  :disabled="quantity <= 1"
-                  class="mobile-quantity-btn"
-                >−</button>
-                <span class="mobile-quantity-display" x-text="quantity"></span>
-                <button 
-                  @click="incrementQuantity()"
-                  :disabled="quantity >= maxQuantity"
-                  class="mobile-quantity-btn"
-                >+</button>
-                <button 
-                  @click="confirmAddToCart()"
-                  :disabled="cartLoading"
-                  class="mobile-confirm-btn"
-                >
-                  <span x-show="cartLoading">Adding...</span>
-                  <span x-show="!cartLoading">Confirm</span>
-                </button>
-              </div>
+              ${showAddToCart ? `
+              <button 
+                @click="handleAddToCartClick()"
+                class="mobile-add-cart-btn"
+              >
+                Add to Cart
+              </button>
+              ` : ''}
             </div>
           </div>
         </div>
         
         <!-- Desktop Product Banner -->
         <div id="product-banner-spacer"></div>
-        <div class="product-banner-fixed-wrapper">
-          <div x-show="!closed" x-cloak>
-            <div class="product-banner-container">
-              <button 
-                class="product-banner-close"
-                @click="close()"
-                aria-label="Close banner"
-              >&times;</button>
-              
-              <div class="product-banner-content">
-                <div class="product-banner-left">
-                  <div class="product-banner-image">
-                    <img 
-                      :src="product.featuredImage || 'https://via.placeholder.com/80'" 
-                      :alt="product.title"
-                      @error="$el.src='https://via.placeholder.com/80'"
-                    />
-                  </div>
-                  
-                  <div class="product-banner-info">
-                    <h3 class="product-banner-title" x-text="product.title"></h3>
-                    ${showPrice && price ? `<p class="product-banner-price">${price}</p>` : ''}
-                  </div>
+        <div class="product-banner-fixed-wrapper" x-show="!closed" x-cloak>
+          <div class="product-banner-container">
+            <button 
+              class="product-banner-close"
+              @click="close()"
+              aria-label="Close banner"
+            >&times;</button>
+            
+            <div class="product-banner-content">
+              <div class="product-banner-left">
+                <div class="product-banner-image">
+                  <img 
+                    :src="product.featuredImage || 'https://via.placeholder.com/80'" 
+                    :alt="product.title"
+                    @error="$el.src='https://via.placeholder.com/80'"
+                  />
                 </div>
                 
-                <div class="product-banner-actions">
-                  <!-- Show Add to Cart button or Quantity Selector -->
-                  <div x-show="!showQuantitySelector">
-                    <button
-                      @click="handleAddToCartClick()"
-                      class="product-banner-btn product-banner-btn-cart"
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                  
-                  <div x-show="showQuantitySelector" x-cloak class="quantity-selector">
-                    <button 
-                      @click="decrementQuantity()"
-                      :disabled="quantity <= 1"
-                      class="quantity-btn"
-                    >−</button>
-                    <span class="quantity-display" x-text="quantity"></span>
-                    <button 
-                      @click="incrementQuantity()"
-                      :disabled="quantity >= maxQuantity"
-                      class="quantity-btn"
-                    >+</button>
-                    <button 
-                      @click="confirmAddToCart()"
-                      :disabled="cartLoading"
-                      class="confirm-btn"
-                    >
-                      <span x-show="cartLoading" class="product-banner-spinner"></span>
-                      <span x-text="cartLoading ? 'Adding...' : 'Confirm'"></span>
-                    </button>
-                  </div>
-                  
-                  <button
-                    @click="handleBuyNow()"
-                    :disabled="cartLoading || buyLoading"
-                    class="product-banner-btn product-banner-btn-buy"
-                  >
-                    <span x-show="buyLoading" class="product-banner-spinner"></span>
-                    <span x-text="buyLoading ? 'Processing...' : 'Buy Now'"></span>
-                  </button>
+                <div class="product-banner-info">
+                  <h3 class="product-banner-title" x-text="product.title"></h3>
+                  ${showPrice && price ? `<p class="product-banner-price">${price}</p>` : ''}
                 </div>
+              </div>
+              
+              <div class="product-banner-actions">
+                <div class="tooltip-container">
+                  <!-- Tooltip -->
+                  <div x-show="showTooltip" x-cloak class="variant-tooltip">
+                    <div class="tooltip-header">
+                      <h4 class="tooltip-title">Select Options</h4>
+                      <button @click="showTooltip = false" class="tooltip-close">&times;</button>
+                    </div>
+                    
+                    <template x-if="hasOptions">
+                      <div>
+                        <template x-for="opt in product.options" :key="opt.position">
+                          <div class="option-group">
+                            <label class="option-label" x-text="opt.name"></label>
+                            <select 
+                              class="option-select" 
+                              :value="selectedOptions[opt.position]" 
+                              @change="selectedOptions[opt.position]=$event.target.value"
+                            >
+                              <template x-for="val in opt.values" :key="val">
+                                <option :value="val" x-text="val"></option>
+                              </template>
+                            </select>
+                          </div>
+                        </template>
+                      </div>
+                    </template>
+                    
+                    <div class="quantity-section">
+                      <span class="quantity-label">Quantity</span>
+                      <div class="quantity-controls">
+                        <button @click="decrementQuantity()" :disabled="quantity<=1" class="quantity-btn">−</button>
+                        <span class="quantity-display" x-text="quantity"></span>
+                        <button @click="incrementQuantity()" :disabled="quantity>=maxQuantity" class="quantity-btn">+</button>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      class="tooltip-confirm-btn" 
+                      @click="confirmAddToCart()" 
+                      :disabled="cartLoading || (hasOptions && !selectedVariant)"
+                    >
+                      <span x-show="cartLoading" class="spinner"></span>
+                      <span x-text="cartLoading ? 'Adding...' : 'Add to Cart'"></span>
+                    </button>
+                  </div>
+                  
+                  ${showAddToCart ? `
+                  <button
+                    @click="handleAddToCartClick()"
+                    class="product-banner-btn product-banner-btn-cart"
+                  >
+                    Add to Cart
+                  </button>
+                  ` : ''}
+                </div>
+                
+                ${showBuyNow ? `
+                <button
+                  @click="handleBuyNow()"
+                  :disabled="cartLoading || buyLoading"
+                  class="product-banner-btn product-banner-btn-buy"
+                >
+                  <span x-show="buyLoading" class="spinner"></span>
+                  <span x-text="buyLoading ? 'Processing...' : 'Buy Now'"></span>
+                </button>
+                ` : ''}
               </div>
             </div>
           </div>
@@ -1345,51 +448,13 @@
   function applyBannerSettings(settings) {
     const root = document.documentElement;
     
-    if (!settings) {
-      // Apply default values
-      root.style.setProperty('--banner-height', '130px');
-      root.style.setProperty('--banner-image-width', '80px');
-      root.style.setProperty('--banner-image-height', '80px');
-      root.style.setProperty('--banner-title-font-size', '15px');
-      root.style.setProperty('--banner-title-color', '#111827');
-      root.style.setProperty('--banner-price-font-size', '14px');
-      root.style.setProperty('--banner-price-color', '#6b7280');
-      root.style.setProperty('--button1-text-color', '#ffffff');
-      root.style.setProperty('--button1-bg-color', '#FF6B6B');
-      root.style.setProperty('--button1-border-color', '#FF6B6B');
-      root.style.setProperty('--button2-text-color', '#FF6B6B');
-      root.style.setProperty('--button2-bg-color', '#ffffff');
-      root.style.setProperty('--button2-border-color', '#FF6B6B');
-      root.style.setProperty('--hurry-up-height', '30px');
-      root.style.setProperty('--hurry-up-bg-color', '#FF6B6B');
-      root.style.setProperty('--hurry-up-text-color', '#ffffff');
-      root.style.setProperty('--hurry-up-font-size', '14px');
-      root.style.setProperty('--mobile-banner-height', '90px');
-      root.style.setProperty('--mobile-banner-radius', '8px');
-      root.style.setProperty('--mobile-banner-margin', '10px');
-      root.style.setProperty('--mobile-product-height', '60px');
-      root.style.setProperty('--mobile-product-padding', '12px 16px');
-      root.style.setProperty('--mobile-title-font-size', '16px');
-      root.style.setProperty('--mobile-title-color', '#111827');
-      root.style.setProperty('--mobile-price-font-size', '14px');
-      root.style.setProperty('--mobile-price-color', '#6b7280');
-      root.style.setProperty('--mobile-button-height', '40px');
-      root.style.setProperty('--mobile-button-padding', '12px 20px');
-      root.style.setProperty('--mobile-button-font-size', '16px');
-      root.style.setProperty('--mobile-button-radius', '6px');
-      root.style.setProperty('--mobile-button-text-color', '#ffffff');
-      root.style.setProperty('--mobile-button-bg-color', '#FF6B6B');
-      root.style.setProperty('--mobile-hurry-up-height', '30px');
-      root.style.setProperty('--mobile-hurry-up-font-size', '14px');
-      root.style.setProperty('--mobile-hurry-up-bg-color', '#FF6B6B');
-      root.style.setProperty('--mobile-hurry-up-text-color', '#ffffff');
-      return;
-    }
+    if (!settings) return;
     
     // Desktop banner settings
     root.style.setProperty('--banner-height', settings.bannerHeight + 'px');
     root.style.setProperty('--banner-image-width', settings.bannerImageHeight + 'px');
     root.style.setProperty('--banner-image-height', settings.bannerImageHeight + 'px');
+    root.style.setProperty('--banner-padding', (settings.bannerPadding || '10') + 'px');
     root.style.setProperty('--banner-title-font-size', settings.bannerTitleFontSize + 'px');
     root.style.setProperty('--banner-title-color', '#' + settings.bannerTitleColor);
     root.style.setProperty('--banner-price-font-size', settings.bannerPriceFontSize + 'px');
@@ -1410,62 +475,110 @@
     root.style.setProperty('--hurry-up-font-size', settings.hurryUpFontSize + 'px');
     
     // Mobile banner settings
-    root.style.setProperty('--mobile-banner-height', settings.mobileBannerHeight + 'px');
-    root.style.setProperty('--mobile-banner-radius', settings.mobileBannerBorderRadius + 'px');
-    root.style.setProperty('--mobile-banner-margin', settings.mobileBannerMargin + 'px');
-    root.style.setProperty('--mobile-product-height', settings.mobileProductHeight + 'px');
-    root.style.setProperty('--mobile-product-padding', settings.mobileProductPadding);
+    if (settings.mobileBannerHeight !== undefined) {
+      root.style.setProperty('--mobile-banner-height', settings.mobileBannerHeight + 'px');
+    }
+    
+    if (settings.mobileBannerBorderRadius !== undefined) {
+      root.style.setProperty('--mobile-banner-radius', settings.mobileBannerBorderRadius + 'px');
+    }
+    
+    if (settings.mobileBannerMargin !== undefined) {
+      root.style.setProperty('--mobile-banner-margin', settings.mobileBannerMargin + 'px');
+    }
+    
+    if (settings.mobileProductHeight !== undefined) {
+      root.style.setProperty('--mobile-product-height', settings.mobileProductHeight + 'px');
+    }
+    
+    if (settings.mobileProductPadding !== undefined) {
+      root.style.setProperty('--mobile-product-padding', settings.mobileProductPadding);
+    }
     
     // Mobile title and price
-    root.style.setProperty('--mobile-title-font-size', settings.mobileTitleFontSize + 'px');
-    root.style.setProperty('--mobile-title-color', '#' + settings.mobileTitleColor);
-    root.style.setProperty('--mobile-price-font-size', settings.mobilePriceFontSize + 'px');
-    root.style.setProperty('--mobile-price-color', '#' + settings.mobilePriceColor);
+    if (settings.mobileTitleFontSize !== undefined) {
+      root.style.setProperty('--mobile-title-font-size', settings.mobileTitleFontSize + 'px');
+    }
+    
+    if (settings.mobileTitleColor !== undefined) {
+      root.style.setProperty('--mobile-title-color', '#' + settings.mobileTitleColor);
+    }
+    
+    if (settings.mobilePriceFontSize !== undefined) {
+      root.style.setProperty('--mobile-price-font-size', settings.mobilePriceFontSize + 'px');
+    }
+    
+    if (settings.mobilePriceColor !== undefined) {
+      root.style.setProperty('--mobile-price-color', '#' + settings.mobilePriceColor);
+    }
     
     // Mobile button
-    root.style.setProperty('--mobile-button-height', settings.mobileButtonHeight + 'px');
-    root.style.setProperty('--mobile-button-padding', settings.mobileButtonPadding);
-    root.style.setProperty('--mobile-button-font-size', settings.mobileButtonFontSize + 'px');
-    root.style.setProperty('--mobile-button-radius', settings.mobileButtonBorderRadius + 'px');
-    root.style.setProperty('--mobile-button-text-color', '#' + settings.mobileButtonTextColor);
-    root.style.setProperty('--mobile-button-bg-color', '#' + settings.mobileButtonBackgroundColor);
+    if (settings.mobileButtonHeight !== undefined) {
+      root.style.setProperty('--mobile-button-height', settings.mobileButtonHeight + 'px');
+    }
+    
+    if (settings.mobileButtonPadding !== undefined) {
+      root.style.setProperty('--mobile-button-padding', settings.mobileButtonPadding);
+    }
+    
+    if (settings.mobileButtonFontSize !== undefined) {
+      root.style.setProperty('--mobile-button-font-size', settings.mobileButtonFontSize + 'px');
+    }
+    
+    if (settings.mobileButtonBorderRadius !== undefined) {
+      root.style.setProperty('--mobile-button-radius', settings.mobileButtonBorderRadius + 'px');
+    }
+    
+    if (settings.mobileButtonTextColor !== undefined) {
+      root.style.setProperty('--mobile-button-text-color', '#' + settings.mobileButtonTextColor);
+    }
+    
+    if (settings.mobileButtonBackgroundColor !== undefined) {
+      root.style.setProperty('--mobile-button-bg-color', '#' + settings.mobileButtonBackgroundColor);
+    }
     
     // Mobile hurry up
-    root.style.setProperty('--mobile-hurry-up-height', settings.mobileHurryUpHeight + 'px');
-    root.style.setProperty('--mobile-hurry-up-font-size', settings.mobileHurryUpFontSize + 'px');
-    root.style.setProperty('--mobile-hurry-up-bg-color', '#' + settings.mobileHurryUpBackgroundColor);
-    root.style.setProperty('--mobile-hurry-up-text-color', '#' + settings.mobileHurryUpTextColor);
+    if (settings.mobileHurryUpHeight !== undefined) {
+      root.style.setProperty('--mobile-hurry-up-height', settings.mobileHurryUpHeight + 'px');
+    }
+    
+    if (settings.mobileHurryUpFontSize !== undefined) {
+      root.style.setProperty('--mobile-hurry-up-font-size', settings.mobileHurryUpFontSize + 'px');
+    }
+    
+    if (settings.mobileHurryUpBackgroundColor !== undefined) {
+      root.style.setProperty('--mobile-hurry-up-bg-color', '#' + settings.mobileHurryUpBackgroundColor);
+    }
+    
+    if (settings.mobileHurryUpTextColor !== undefined) {
+      root.style.setProperty('--mobile-hurry-up-text-color', '#' + settings.mobileHurryUpTextColor);
+    }
   }
   
   async function init() {
     try {
       const handle = getCurrentProductHandle();
       
-      if (!handle) {
-        return;
-      }
+      if (!handle) return;
       
       const data = await fetchBannerData(handle);
       const ajax = await fetchProductAjax(handle);
       
-      if (!data.product) {
-        return;
-      }
+      if (!data.product) return;
       
       if (ajax) {
         data.product.options = ajax.options || [];
         data.product.variantsWithOptions = ajax.variantsWithOptions || [];
       }
 
-      applyThemeStyles();
       applyBannerSettings(data.settings);
       
       const container = document.createElement('div');
-      container.innerHTML = renderBanner(data.product, data.settings);
+      container.innerHTML = renderBanner(data.product, data.settings, data.customization);
       document.body.appendChild(container);
       
     } catch (error) {
-      // Silent fail - banner won't show if there's an error
+      // Silent fail
     }
   }
   
@@ -1486,7 +599,7 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "Professional product banner with quantity selector. Automatically appears on product pages."
+      "content": "Professional product banner with tooltip variant selector. Automatically appears on product pages."
     }
   ]
 }
