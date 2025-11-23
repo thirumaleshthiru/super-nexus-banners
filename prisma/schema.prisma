@@ -330,12 +330,17 @@ model ProductBannerSettings {
   bannerPriceFontSize          String   @default("14")
   bannerPriceColor             String   @default("6b7280")
   showPrice                    Boolean  @default(true)
+  bannerBackgroundColor        String   @default("ffffff")
+  bannerBorderRadius           String   @default("12")
+  button1Text                  String   @default("Add to Cart")
   button1TextColor             String   @default("ffffff")
   button1BackgroundColor       String   @default("FF6B6B")
   button1BorderColor           String   @default("FF6B6B")
+  button2Text                  String   @default("Buy Now")
   button2TextColor             String   @default("FF6B6B")
   button2BackgroundColor       String   @default("ffffff")
   button2BorderColor           String   @default("FF6B6B")
+  hurryUpText                  String   @default("Hurry Up! Limited Stock")
   hurryUpBannerHeight          String   @default("30")
   hurryUpBannerBackgroundColor String   @default("FF6B6B")
   hurryUpTextColor             String   @default("ffffff")
@@ -359,6 +364,8 @@ model ProductBannerSettings {
   mobileHurryUpFontSize        String   @default("14")
   mobileHurryUpBackgroundColor String   @default("FF6B6B")
   mobileHurryUpTextColor       String   @default("ffffff")
+  appliedTemplateId            String?
+  appliedTemplateName          String?
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt
 }
@@ -444,6 +451,7 @@ model ProductBannerVariant {
   buttonText                   String              @default("Add to Cart")
   buttonBackgroundColor        String              @default("ffffff")
   buttonTextColor              String              @default("FF6B6B")
+  buttonBorderColor            String              @default("FF6B6B")
   buttonBorderRadius           String              @default("6")
   buttonFontSize               String              @default("16")
   buttonHeight                 String              @default("45")
@@ -452,6 +460,7 @@ model ProductBannerVariant {
   buyNowButtonText             String              @default("Buy Now")
   buyNowButtonBackgroundColor  String              @default("ffffff")
   buyNowButtonTextColor        String              @default("FF6B6B")
+  buyNowButtonBorderColor      String              @default("FF6B6B")
   buyNowButtonBorderRadius     String              @default("6")
   buyNowButtonFontSize         String              @default("16")
   buyNowButtonHeight           String              @default("45")
@@ -484,4 +493,65 @@ model ProductBannerVariant {
 
   @@index([testId])
   @@index([isControl])
+}
+
+model ProductBannerTemplate {
+  id                           String   @id @default(cuid())
+  name                         String
+  description                  String?
+  category                     String   @default("custom") // custom, sale, new_arrival, bestseller, limited_time, featured
+  isPrebuilt                   Boolean  @default(false)
+  
+  // Banner settings
+  bannerHeight                 String   @default("130")
+  bannerImageHeight            String   @default("80")
+  bannerPadding                String   @default("10")
+  bannerTitleFontSize          String   @default("15")
+  bannerTitleColor             String   @default("111827")
+  bannerPriceFontSize          String   @default("14")
+  bannerPriceColor             String   @default("6b7280")
+  bannerBackgroundColor        String   @default("ffffff")
+  bannerBorderRadius           String   @default("12")
+  
+  // Button 1 (Add to Cart) settings
+  button1Text                  String   @default("Add to Cart")
+  button1TextColor             String   @default("ffffff")
+  button1BackgroundColor       String   @default("FF6B6B")
+  button1BorderColor           String   @default("FF6B6B")
+  button1BorderRadius          String   @default("6")
+  button1FontSize              String   @default("16")
+  button1Height                String   @default("45")
+  
+  // Button 2 (Buy Now) settings
+  button2Text                  String   @default("Buy Now")
+  button2TextColor             String   @default("FF6B6B")
+  button2BackgroundColor       String   @default("ffffff")
+  button2BorderColor           String   @default("FF6B6B")
+  button2BorderRadius          String   @default("6")
+  button2FontSize              String   @default("16")
+  button2Height                String   @default("45")
+  
+  // Hurry up banner settings
+  hurryUpText                  String   @default("Hurry Up! Limited Stock")
+  hurryUpBannerHeight          String   @default("30")
+  hurryUpBannerBackgroundColor String   @default("FF6B6B")
+  hurryUpTextColor             String   @default("ffffff")
+  hurryUpFontSize              String   @default("14")
+  
+  // Visibility toggles
+  showPrice                    Boolean  @default(true)
+  isShowAddToCartButton        Boolean  @default(true)
+  isShowBuyNowButton           Boolean  @default(true)
+  isShowHurryUpBanner          Boolean  @default(true)
+  
+  // Usage tracking
+  usageCount                   Int      @default(0)
+  lastUsedAt                   DateTime?
+  
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPrebuilt])
+  @@index([usageCount])
 }

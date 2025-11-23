@@ -9,6 +9,12 @@ import {
   Checkbox,
   Divider,
   Banner,
+  Modal,
+  FormLayout,
+  Select,
+  Badge,
+  DataTable,
+  EmptyState,
 } from "@shopify/polaris"
 import { TitleBar } from "@shopify/app-bridge-react"
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node"
@@ -53,19 +59,28 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   try {
-    // Fetch the product
-    const product = await (prisma as any).product.findUnique({
-      where: { id: productId },
-      include: {
-        productBannerCustomization: true
-      }
-    })
+    // Fetch the product and templates
+    const [product, templates] = await Promise.all([
+      (prisma as any).product.findUnique({
+        where: { id: productId },
+        include: {
+          productBannerCustomization: true
+        }
+      }),
+      (prisma as any).productBannerTemplate.findMany({
+        orderBy: [
+          { isPrebuilt: "desc" },
+          { usageCount: "desc" },
+          { updatedAt: "desc" },
+        ],
+      })
+    ])
 
     if (!product) {
       throw new Response("Product not found", { status: 404 });
     }
 
-    return json({ product })
+    return json({ product, templates })
   } catch (error) {
     console.error("Loader error:", error)
     throw new Response("Failed to load product", { status: 500 });
@@ -144,12 +159,70 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
   }
 
+  if (intent === "apply_template") {
+    const templateId = formData.get("templateId") as string
+    
+    try {
+      // Fetch the template
+      const template = await (prisma as any).productBannerTemplate.findUnique({
+        where: { id: templateId }
+      })
+
+      if (!template) {
+        return json({ success: false, error: "Template not found" }, { status: 404 })
+      }
+
+      // Apply template settings to product customization
+      const customizationData = {
+        isShowPrice: template.showPrice,
+        isShowAddToCartButton: template.isShowAddToCartButton,
+        isShowBuyNowButton: template.isShowBuyNowButton,
+        isShowHurryUpBanner: template.isShowHurryUpBanner,
+      }
+
+      // Check if customization exists
+      const existing = await (prisma as any).productBannerCustomization.findUnique({
+        where: { productId: productId }
+      })
+
+      if (existing) {
+        // Update existing customization
+        await (prisma as any).productBannerCustomization.update({
+          where: { productId: productId },
+          data: customizationData
+        })
+      } else {
+        // Create new customization
+        await (prisma as any).productBannerCustomization.create({
+          data: {
+            productId,
+            ...customizationData
+          }
+        })
+      }
+
+      // Update template usage
+      await (prisma as any).productBannerTemplate.update({
+        where: { id: templateId },
+        data: {
+          usageCount: { increment: 1 },
+          lastUsedAt: new Date()
+        }
+      })
+
+      return json({ success: true, message: "Template applied successfully!" })
+    } catch (error) {
+      console.error("Apply template error:", error)
+      return json({ success: false, error: String(error) }, { status: 500 })
+    }
+  }
+
   return redirect("/app/manage-product-banners")
 }
 
 // ---- UI ----
 export default function EditProductBannerPage() {
-  const { product } = useLoaderData<typeof loader>()
+  const { product, templates } = useLoaderData<typeof loader>()
   const navigation = useNavigation()
   const isSubmitting = navigation.state === "submitting"
   const isRedirecting = navigation.state === "loading" && navigation.formData == null
@@ -162,6 +235,11 @@ export default function EditProductBannerPage() {
   const [isShowAddToCartButton, setIsShowAddToCartButton] = useState(customization?.isShowAddToCartButton ?? true)
   const [isShowBuyNowButton, setIsShowBuyNowButton] = useState(customization?.isShowBuyNowButton ?? true)
   const [isShowHurryUpBanner, setIsShowHurryUpBanner] = useState(customization?.isShowHurryUpBanner ?? true)
+  
+  // Template modal state
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState("")
+  const [filterCategory, setFilterCategory] = useState("all")
 
   return (
     <Page>
@@ -306,6 +384,24 @@ export default function EditProductBannerPage() {
               </Form>
             </Card>
 
+            {/* Apply Template */}
+            <Card>
+              <BlockStack gap="300">
+                <Text as="h3" variant="headingMd">
+                  Apply Template
+                </Text>
+                <Text as="p">
+                  Quickly apply a pre-configured template to this product banner.
+                </Text>
+                <Button 
+                  onClick={() => setShowTemplateModal(true)}
+                  disabled={isSubmitting || isRedirecting}
+                >
+                  Choose Template
+                </Button>
+              </BlockStack>
+            </Card>
+
             {/* Reset to Global Settings */}
             {hasCustomization && (
               <Card>
@@ -333,6 +429,101 @@ export default function EditProductBannerPage() {
           </BlockStack>
         </Layout.Section>
       </Layout>
+
+      {/* Template Selection Modal */}
+      <Modal
+        open={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        title="Choose Template"
+        primaryAction={{
+          content: "Apply Template",
+          disabled: !selectedTemplate,
+          loading: isSubmitting,
+          onAction: () => {
+            if (selectedTemplate) {
+              const formData = new FormData();
+              formData.append("_intent", "apply_template");
+              formData.append("templateId", selectedTemplate);
+              
+              fetch(window.location.href, {
+                method: "POST",
+                body: formData,
+              }).then(response => response.json()).then(data => {
+                if (data.success) {
+                  // Refresh the page to show updated settings
+                  window.location.reload();
+                } else {
+                  console.error("Failed to apply template:", data.error);
+                }
+                setShowTemplateModal(false);
+              });
+            }
+          },
+        }}
+        secondaryActions={[
+          {
+            content: "Cancel",
+            onAction: () => setShowTemplateModal(false),
+          },
+        ]}
+      >
+        <Modal.Section>
+          <FormLayout>
+            <Select
+              label="Filter by Category"
+              value={filterCategory}
+              onChange={setFilterCategory}
+              options={[
+                { label: "All Templates", value: "all" },
+                { label: "Pre-built", value: "prebuilt" },
+                { label: "Custom", value: "custom" },
+                { label: "Sale", value: "sale" },
+                { label: "New Arrival", value: "new_arrival" },
+                { label: "Bestseller", value: "bestseller" },
+                { label: "Limited Time", value: "limited_time" },
+                { label: "Featured", value: "featured" },
+              ]}
+            />
+            
+            {templates.length === 0 ? (
+              <EmptyState
+                heading="No templates available"
+                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+              >
+                <p>Create templates from the Banner Templates page to use them here.</p>
+              </EmptyState>
+            ) : (
+              <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                <DataTable
+                  columnContentTypes={["text", "text", "text", "text"]}
+                  headings={["", "Name", "Category", "Usage"]}
+                  rows={templates
+                    .filter((template: any) => {
+                      if (filterCategory === "all") return true;
+                      if (filterCategory === "prebuilt") return template.isPrebuilt;
+                      return template.category === filterCategory;
+                    })
+                    .map((template: any) => [
+                      <input
+                        key={template.id}
+                        type="radio"
+                        name="template"
+                        value={template.id}
+                        checked={selectedTemplate === template.id}
+                        onChange={(e) => setSelectedTemplate(e.target.value)}
+                      />,
+                      template.name,
+                      <Badge key={template.id} tone={template.isPrebuilt ? "info" : undefined}>
+                        {template.isPrebuilt ? "Pre-built" : template.category}
+                      </Badge>,
+                      template.usageCount,
+                    ])}
+                />
+              </div>
+            )}
+          </FormLayout>
+        </Modal.Section>
+      </Modal>
     </Page>
   )
 }

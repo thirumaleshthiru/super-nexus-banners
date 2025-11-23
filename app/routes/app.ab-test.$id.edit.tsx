@@ -17,11 +17,10 @@ import { TitleBar } from "@shopify/app-bridge-react"
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node"
 import { json, redirect } from "@remix-run/node"
 import { useLoaderData, useSubmit, useNavigate, useNavigation } from "@remix-run/react"
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback } from "react"
 import prisma from "app/db.server"
 import { authenticate } from "../shopify.server"
 
-// Loader
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const auth = await authenticate.admin(request)
   if (auth instanceof Response) {
@@ -31,7 +30,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const testId = params.id
 
   try {
-    // Fetch test with variants
     const test = await (prisma as any).productBannerTest.findUnique({
       where: { id: testId },
       include: {
@@ -43,7 +41,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       throw new Error("Test not found")
     }
 
-    // Fetch product
     const product = await prisma.product.findUnique({
       where: { id: test.productId },
       select: {
@@ -54,26 +51,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       }
     })
 
-    // Fetch all products for product selector
-    const products = await prisma.product.findMany({
-      select: {
-        id: true,
-        handle: true,
-        title: true,
-        featuredImage: true,
-        price: true,
-      },
-      orderBy: { title: 'asc' }
-    })
-
-    return json({ test, product, products })
+    return json({ test, product })
   } catch (error) {
     console.error("Error loading test:", error)
     throw error
   }
 }
 
-// Action
 export async function action({ request, params }: ActionFunctionArgs) {
   const auth = await authenticate.admin(request)
   if (auth instanceof Response) {
@@ -89,7 +73,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
       const testData = JSON.parse(formData.get("testData") as string)
       const variantsData = JSON.parse(formData.get("variantsData") as string)
 
-      // Update test
       await (prisma as any).productBannerTest.update({
         where: { id: testId },
         data: {
@@ -103,10 +86,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
         }
       })
 
-      // Update variants
       for (const variantData of variantsData) {
         if (variantData.id) {
-          // Update existing variant
           await (prisma as any).productBannerVariant.update({
             where: { id: variantData.id },
             data: {
@@ -122,12 +103,14 @@ export async function action({ request, params }: ActionFunctionArgs) {
               buttonText: variantData.buttonText,
               buttonBackgroundColor: variantData.buttonBackgroundColor,
               buttonTextColor: variantData.buttonTextColor,
+              buttonBorderColor: variantData.buttonBorderColor,
               buttonBorderRadius: variantData.buttonBorderRadius,
               buttonFontSize: variantData.buttonFontSize,
               buttonHeight: variantData.buttonHeight,
               buyNowButtonText: variantData.buyNowButtonText,
               buyNowButtonBackgroundColor: variantData.buyNowButtonBackgroundColor,
               buyNowButtonTextColor: variantData.buyNowButtonTextColor,
+              buyNowButtonBorderColor: variantData.buyNowButtonBorderColor,
               buyNowButtonBorderRadius: variantData.buyNowButtonBorderRadius,
               buyNowButtonFontSize: variantData.buyNowButtonFontSize,
               buyNowButtonHeight: variantData.buyNowButtonHeight,
@@ -157,15 +140,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
 }
 
-// Component
 export default function EditABTest() {
-  const { test, product, products } = useLoaderData<typeof loader>()
+  const { test, product } = useLoaderData<typeof loader>()
   const submit = useSubmit()
   const navigate = useNavigate()
   const navigation = useNavigation()
   const isLoading = navigation.state === "submitting"
 
-  // Test settings
   const [testName, setTestName] = useState(test.name)
   const [goalMetric, setGoalMetric] = useState(test.goalMetric)
   const [minSampleSize, setMinSampleSize] = useState(String(test.minSampleSize))
@@ -173,25 +154,28 @@ export default function EditABTest() {
   const [trafficAllocation, setTrafficAllocation] = useState(String(test.trafficAllocation))
   const [autoSelectWinner, setAutoSelectWinner] = useState(test.autoSelectWinner)
   const [notes, setNotes] = useState(test.notes || "")
-
-  // Variants state
   const [variants, setVariants] = useState<any[]>(test.variants)
   const [activeVariantIndex, setActiveVariantIndex] = useState(0)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const handleVariantChange = useCallback((field: string, value: any) => {
-    const newVariants = [...variants]
-    newVariants[activeVariantIndex] = {
-      ...newVariants[activeVariantIndex],
-      [field]: value
-    }
-    setVariants(newVariants)
-  }, [variants, activeVariantIndex])
+    setVariants((prevVariants) => {
+      const newVariants = [...prevVariants]
+      newVariants[activeVariantIndex] = {
+        ...newVariants[activeVariantIndex],
+        [field]: value
+      }
+      return newVariants
+    })
+  }, [activeVariantIndex])
 
   const handleSubmit = useCallback(() => {
-    if (!testName) {
-      alert("Please fill in test name")
+    if (!testName.trim()) {
+      setErrorMessage("Please fill in test name")
       return
     }
+
+    setErrorMessage(null)
 
     const testData = {
       name: testName,
@@ -212,8 +196,6 @@ export default function EditABTest() {
   }, [testName, goalMetric, minSampleSize, confidenceLevel, trafficAllocation, autoSelectWinner, notes, variants, submit])
 
   const activeVariant = variants[activeVariantIndex]
-
-  // Disable editing if test is completed
   const isCompleted = test.status === "completed"
 
   return (
@@ -225,6 +207,12 @@ export default function EditABTest() {
       <Layout>
         <Layout.Section>
           <BlockStack gap="400">
+            {errorMessage && (
+              <Banner tone="critical" onDismiss={() => setErrorMessage(null)}>
+                <Text as="p" variant="bodyMd">{errorMessage}</Text>
+              </Banner>
+            )}
+
             {isCompleted && (
               <Banner tone="warning">
                 <Text as="p" variant="bodyMd">
@@ -241,7 +229,6 @@ export default function EditABTest() {
               </Banner>
             )}
 
-            {/* Test Info */}
             <Card>
               <BlockStack gap="300">
                 <InlineStack gap="300" blockAlign="center">
@@ -252,11 +239,13 @@ export default function EditABTest() {
                       borderRadius: "8px", 
                       overflow: "hidden",
                       background: "#f3f4f6",
-                      border: "1px solid #e5e7eb"
+                      border: "1px solid #e5e7eb",
+                      flexShrink: 0
                     }}>
                       <img 
                         src={product.featuredImage} 
-                        alt={product.title}
+                        alt={product.title || "Product image"}
+                        loading="lazy"
                         style={{ 
                           width: "100%", 
                           height: "100%", 
@@ -277,7 +266,6 @@ export default function EditABTest() {
               </BlockStack>
             </Card>
 
-            {/* Test Configuration */}
             <Card>
               <BlockStack gap="400">
                 <Text as="h2" variant="headingLg">
@@ -304,7 +292,7 @@ export default function EditABTest() {
                   helpText="The metric used to determine the winning variant"
                 />
 
-                <InlineGrid columns={2} gap="400">
+                <InlineGrid columns={{ xs: 1, sm: 2 }} gap="400">
                   <TextField
                     label="Minimum Sample Size"
                     type="number"
@@ -350,7 +338,6 @@ export default function EditABTest() {
               </BlockStack>
             </Card>
 
-            {/* Variants Management */}
             <Card>
               <BlockStack gap="400">
                 <InlineStack align="space-between">
@@ -365,8 +352,7 @@ export default function EditABTest() {
                   </Text>
                 </Banner>
 
-                {/* Variant Tabs */}
-                <InlineStack gap="200">
+                <InlineStack gap="200" wrap>
                   {variants.map((variant: any, index: number) => (
                     <Button
                       key={variant.id}
@@ -381,7 +367,6 @@ export default function EditABTest() {
 
                 <Divider />
 
-                {/* Active Variant Settings */}
                 <BlockStack gap="400">
                   <TextField
                     label="Variant Name"
@@ -394,7 +379,7 @@ export default function EditABTest() {
                     Banner Settings
                   </Text>
 
-                  <InlineGrid columns={3} gap="400">
+                  <InlineGrid columns={{ xs: 1, sm: 3 }} gap="400">
                     <TextField
                       label="Banner Height (px)"
                       value={activeVariant.bannerHeight}
@@ -415,7 +400,7 @@ export default function EditABTest() {
                     />
                   </InlineGrid>
 
-                  <InlineGrid columns={3} gap="400">
+                  <InlineGrid columns={{ xs: 1, sm: 3 }} gap="400">
                     <TextField
                       label="Background Color"
                       value={activeVariant.bannerBackgroundColor}
@@ -443,7 +428,7 @@ export default function EditABTest() {
                     Add to Cart Button
                   </Text>
 
-                  <InlineGrid columns={2} gap="400">
+                  <InlineGrid columns={{ xs: 1, sm: 2 }} gap="400">
                     <TextField
                       label="Button Text"
                       value={activeVariant.buttonText}
@@ -458,7 +443,7 @@ export default function EditABTest() {
                     />
                   </InlineGrid>
 
-                  <InlineGrid columns={3} gap="400">
+                  <InlineGrid columns={{ xs: 1, sm: 2, md: 4 }} gap="400">
                     <TextField
                       label="Button Background"
                       value={activeVariant.buttonBackgroundColor}
@@ -474,6 +459,13 @@ export default function EditABTest() {
                       autoComplete="off"
                     />
                     <TextField
+                      label="Button Border Color"
+                      value={activeVariant.buttonBorderColor || activeVariant.buttonBackgroundColor}
+                      onChange={(value) => handleVariantChange('buttonBorderColor', value)}
+                      prefix="#"
+                      autoComplete="off"
+                    />
+                    <TextField
                       label="Button Border Radius"
                       value={activeVariant.buttonBorderRadius}
                       onChange={(value) => handleVariantChange('buttonBorderRadius', value)}
@@ -485,7 +477,7 @@ export default function EditABTest() {
                     Buy Now Button
                   </Text>
 
-                  <InlineGrid columns={2} gap="400">
+                  <InlineGrid columns={{ xs: 1, sm: 2 }} gap="400">
                     <TextField
                       label="Button Text"
                       value={activeVariant.buyNowButtonText}
@@ -500,7 +492,7 @@ export default function EditABTest() {
                     />
                   </InlineGrid>
 
-                  <InlineGrid columns={3} gap="400">
+                  <InlineGrid columns={{ xs: 1, sm: 2, md: 4 }} gap="400">
                     <TextField
                       label="Button Background"
                       value={activeVariant.buyNowButtonBackgroundColor}
@@ -512,6 +504,13 @@ export default function EditABTest() {
                       label="Button Text Color"
                       value={activeVariant.buyNowButtonTextColor}
                       onChange={(value) => handleVariantChange('buyNowButtonTextColor', value)}
+                      prefix="#"
+                      autoComplete="off"
+                    />
+                    <TextField
+                      label="Button Border Color"
+                      value={activeVariant.buyNowButtonBorderColor || activeVariant.buyNowButtonBackgroundColor}
+                      onChange={(value) => handleVariantChange('buyNowButtonBorderColor', value)}
                       prefix="#"
                       autoComplete="off"
                     />
@@ -534,7 +533,7 @@ export default function EditABTest() {
                     autoComplete="off"
                   />
 
-                  <InlineGrid columns={3} gap="400">
+                  <InlineGrid columns={{ xs: 1, sm: 3 }} gap="400">
                     <TextField
                       label="Background Color"
                       value={activeVariant.hurryUpBackgroundColor}
@@ -587,7 +586,6 @@ export default function EditABTest() {
               </BlockStack>
             </Card>
 
-            {/* Action Buttons */}
             <Card>
               <InlineStack align="end" gap="300">
                 <Button onClick={() => navigate(`/app/ab-test/${test.id}/results`)}>
@@ -608,4 +606,3 @@ export default function EditABTest() {
     </Page>
   )
 }
-

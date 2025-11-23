@@ -15,6 +15,10 @@ import {
   Badge,
   Tabs,
   EmptyState,
+  Modal,
+  FormLayout,
+  Select,
+  Banner,
 } from "@shopify/polaris"
 import { TitleBar } from "@shopify/app-bridge-react"
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node"
@@ -34,12 +38,17 @@ const defaultSettings = {
   bannerPriceFontSize: "14",
   bannerPriceColor: "6b7280",
   showPrice: true,
+  bannerBackgroundColor: "ffffff",
+  bannerBorderRadius: "0",
+  button1Text: "Add to Cart",
   button1TextColor: "ffffff",
   button1BackgroundColor: "FF6B6B",
   button1BorderColor: "FF6B6B",
+  button2Text: "Buy Now",
   button2TextColor: "FF6B6B",
   button2BackgroundColor: "ffffff",
   button2BorderColor: "FF6B6B",
+  hurryUpText: "Hurry Up! Limited Stock",
   hurryUpBannerHeight: "30",
   hurryUpBannerBackgroundColor: "FF6B6B",
   hurryUpTextColor: "ffffff",
@@ -115,12 +124,17 @@ export async function action({ request }: ActionFunctionArgs) {
       bannerPriceFontSize: String(formData.get("bannerPriceFontSize") || defaultSettings.bannerPriceFontSize),
       bannerPriceColor: stripHash(String(formData.get("bannerPriceColor") || defaultSettings.bannerPriceColor)),
       showPrice: formData.get("showPrice") === "true",
+      bannerBackgroundColor: stripHash(String(formData.get("bannerBackgroundColor") || defaultSettings.bannerBackgroundColor)),
+      bannerBorderRadius: String(formData.get("bannerBorderRadius") || defaultSettings.bannerBorderRadius),
+      button1Text: String(formData.get("button1Text") || defaultSettings.button1Text),
       button1TextColor: stripHash(String(formData.get("button1TextColor") || defaultSettings.button1TextColor)),
       button1BackgroundColor: stripHash(String(formData.get("button1BackgroundColor") || defaultSettings.button1BackgroundColor)),
       button1BorderColor: stripHash(String(formData.get("button1BorderColor") || defaultSettings.button1BorderColor)),
+      button2Text: String(formData.get("button2Text") || defaultSettings.button2Text),
       button2TextColor: stripHash(String(formData.get("button2TextColor") || defaultSettings.button2TextColor)),
       button2BackgroundColor: stripHash(String(formData.get("button2BackgroundColor") || defaultSettings.button2BackgroundColor)),
       button2BorderColor: stripHash(String(formData.get("button2BorderColor") || defaultSettings.button2BorderColor)),
+      hurryUpText: String(formData.get("hurryUpText") || defaultSettings.hurryUpText),
       hurryUpBannerHeight: String(formData.get("hurryUpBannerHeight") || defaultSettings.hurryUpBannerHeight),
       hurryUpBannerBackgroundColor: stripHash(String(formData.get("hurryUpBannerBackgroundColor") || defaultSettings.hurryUpBannerBackgroundColor)),
       hurryUpTextColor: stripHash(String(formData.get("hurryUpTextColor") || defaultSettings.hurryUpTextColor)),
@@ -167,6 +181,59 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   }
 
+  if (intent === "save_as_template") {
+    const stripHash = (color: string) => color?.replace('#', '') || ''
+    
+    const templateData = {
+      name: String(formData.get("templateName") || "Custom Template"),
+      description: formData.get("templateDescription") as string || null,
+      category: String(formData.get("templateCategory") || "custom"),
+      bannerHeight: String(formData.get("bannerHeight") || defaultSettings.bannerHeight),
+      bannerImageHeight: String(formData.get("bannerImageHeight") || defaultSettings.bannerImageHeight),
+      bannerPadding: String(formData.get("bannerPadding") || defaultSettings.bannerPadding),
+      bannerTitleFontSize: String(formData.get("bannerTitleFontSize") || defaultSettings.bannerTitleFontSize),
+      bannerTitleColor: stripHash(String(formData.get("bannerTitleColor") || defaultSettings.bannerTitleColor)),
+      bannerPriceFontSize: String(formData.get("bannerPriceFontSize") || defaultSettings.bannerPriceFontSize),
+      bannerPriceColor: stripHash(String(formData.get("bannerPriceColor") || defaultSettings.bannerPriceColor)),
+      bannerBackgroundColor: "ffffff", // Default white background
+      bannerBorderRadius: "12", // Default border radius
+      button1Text: "Add to Cart",
+      button1TextColor: stripHash(String(formData.get("button1TextColor") || defaultSettings.button1TextColor)),
+      button1BackgroundColor: stripHash(String(formData.get("button1BackgroundColor") || defaultSettings.button1BackgroundColor)),
+      button1BorderColor: stripHash(String(formData.get("button1BorderColor") || defaultSettings.button1BorderColor)),
+      button1BorderRadius: "6",
+      button1FontSize: "16",
+      button1Height: "45",
+      button2Text: "Buy Now",
+      button2TextColor: stripHash(String(formData.get("button2TextColor") || defaultSettings.button2TextColor)),
+      button2BackgroundColor: stripHash(String(formData.get("button2BackgroundColor") || defaultSettings.button2BackgroundColor)),
+      button2BorderColor: stripHash(String(formData.get("button2BorderColor") || defaultSettings.button2BorderColor)),
+      button2BorderRadius: "6",
+      button2FontSize: "16",
+      button2Height: "45",
+      hurryUpText: "Hurry Up! Limited Stock",
+      hurryUpBannerHeight: String(formData.get("hurryUpBannerHeight") || defaultSettings.hurryUpBannerHeight),
+      hurryUpBannerBackgroundColor: stripHash(String(formData.get("hurryUpBannerBackgroundColor") || defaultSettings.hurryUpBannerBackgroundColor)),
+      hurryUpTextColor: stripHash(String(formData.get("hurryUpTextColor") || defaultSettings.hurryUpTextColor)),
+      hurryUpFontSize: String(formData.get("hurryUpFontSize") || defaultSettings.hurryUpFontSize),
+      showPrice: formData.get("showPrice") === "true",
+      isShowAddToCartButton: true,
+      isShowBuyNowButton: true,
+      isShowHurryUpBanner: true,
+    }
+
+    try {
+      await (prisma as any).productBannerTemplate.create({
+        data: templateData,
+      })
+
+      return json({ success: true, message: "Template saved successfully!" })
+    } catch (error) {
+      console.error("Save template error:", error)
+      return json({ success: false, error: String(error) }, { status: 500 })
+    }
+  }
+
   return json({ success: false, error: "Invalid action" })
 }
 
@@ -183,6 +250,10 @@ export default function ManageProductBannersPage() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [showSuccessToast, setShowSuccessToast] = useState(false)
   const [showErrorToast, setShowErrorToast] = useState(false)
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false)
+  const [templateName, setTemplateName] = useState("")
+  const [templateDescription, setTemplateDescription] = useState("")
+  const [templateCategory, setTemplateCategory] = useState("custom")
 
 
   // Handle toast dismiss
@@ -1107,6 +1178,12 @@ export default function ManageProductBannersPage() {
                                 {isSubmitting ? "Saving Settings..." : "Save Settings"}
                               </Button>
                               <Button 
+                                onClick={() => setShowSaveTemplateModal(true)}
+                                disabled={isSubmitting}
+                              >
+                                Save as Template
+                              </Button>
+                              <Button 
                                 onClick={handleCancel}
                                 disabled={isSubmitting}
                               >
@@ -1143,6 +1220,103 @@ export default function ManageProductBannersPage() {
           duration={5000}
         />
       )}
+
+      {/* Save as Template Modal */}
+      <Modal
+        open={showSaveTemplateModal}
+        onClose={() => setShowSaveTemplateModal(false)}
+        title="Save as Template"
+        primaryAction={{
+          content: "Save Template",
+          loading: isSubmitting,
+          onAction: () => {
+            const form = document.getElementById("save-template-form") as HTMLFormElement;
+            if (form) {
+              const formData = new FormData(form);
+              
+              // Add current settings to form data
+              formData.append("_intent", "save_as_template");
+              formData.append("bannerHeight", bannerHeight);
+              formData.append("bannerImageHeight", bannerImageHeight);
+              formData.append("bannerPadding", bannerPadding);
+              formData.append("bannerTitleFontSize", bannerTitleFontSize);
+              formData.append("bannerTitleColor", bannerTitleColor);
+              formData.append("bannerPriceFontSize", bannerPriceFontSize);
+              formData.append("bannerPriceColor", bannerPriceColor);
+              formData.append("showPrice", showPrice.toString());
+              formData.append("button1TextColor", button1TextColor);
+              formData.append("button1BackgroundColor", button1BackgroundColor);
+              formData.append("button1BorderColor", button1BorderColor);
+              formData.append("button2TextColor", button2TextColor);
+              formData.append("button2BackgroundColor", button2BackgroundColor);
+              formData.append("button2BorderColor", button2BorderColor);
+              formData.append("hurryUpBannerHeight", hurryUpBannerHeight);
+              formData.append("hurryUpBannerBackgroundColor", hurryUpBannerBackgroundColor);
+              formData.append("hurryUpTextColor", hurryUpTextColor);
+              formData.append("hurryUpFontSize", hurryUpFontSize);
+
+              const request = new Request(window.location.href, {
+                method: "POST",
+                body: formData,
+              });
+
+              fetch(request).then(() => {
+                setShowSaveTemplateModal(false);
+                setTemplateName("");
+                setTemplateDescription("");
+                setTemplateCategory("custom");
+              });
+            }
+          },
+        }}
+        secondaryActions={[
+          {
+            content: "Cancel",
+            onAction: () => setShowSaveTemplateModal(false),
+          },
+        ]}
+      >
+        <Modal.Section>
+          <Form id="save-template-form">
+            <FormLayout>
+              <TextField
+                label="Template Name"
+                value={templateName}
+                onChange={setTemplateName}
+                name="templateName"
+                autoComplete="off"
+                helpText="Give your template a descriptive name"
+              />
+              
+              <TextField
+                label="Description"
+                value={templateDescription}
+                onChange={setTemplateDescription}
+                name="templateDescription"
+                multiline={2}
+                autoComplete="off"
+                helpText="Optional description for this template"
+              />
+              
+              <Select
+                label="Category"
+                value={templateCategory}
+                onChange={setTemplateCategory}
+                name="templateCategory"
+                options={[
+                  { label: "Custom", value: "custom" },
+                  { label: "Sale", value: "sale" },
+                  { label: "New Arrival", value: "new_arrival" },
+                  { label: "Bestseller", value: "bestseller" },
+                  { label: "Limited Time", value: "limited_time" },
+                  { label: "Featured", value: "featured" },
+                ]}
+                helpText="Choose a category for better organization"
+              />
+            </FormLayout>
+          </Form>
+        </Modal.Section>
+      </Modal>
     </Page>
     </Frame>
   )

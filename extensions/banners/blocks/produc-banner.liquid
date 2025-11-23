@@ -577,6 +577,14 @@
     root.style.setProperty('--banner-price-font-size', settings.bannerPriceFontSize + 'px');
     root.style.setProperty('--banner-price-color', '#' + settings.bannerPriceColor);
     
+    // Banner styling
+    if (settings.bannerBackgroundColor) {
+      root.style.setProperty('--banner-bg-color', '#' + settings.bannerBackgroundColor);
+    }
+    if (settings.bannerBorderRadius) {
+      root.style.setProperty('--banner-border-radius', settings.bannerBorderRadius + 'px');
+    }
+    
     // Button settings
     root.style.setProperty('--button1-text-color', '#' + settings.button1TextColor);
     root.style.setProperty('--button1-bg-color', '#' + settings.button1BackgroundColor);

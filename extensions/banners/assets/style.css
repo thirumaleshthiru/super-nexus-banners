@@ -44,6 +44,8 @@
   --banner-title-color: #111827;
   --banner-price-font-size: 14px;
   --banner-price-color: #6b7280;
+  --banner-bg-color: #ffffff;
+  --banner-border-radius: 0px;
   
   /* Buttons */
   --button1-text-color: #ffffff;
@@ -126,12 +128,14 @@
   left: 0 !important;
   right: 0 !important;
   z-index: 999999 !important;
-  background: #ffffff;
+  background: var(--banner-bg-color);
   box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
   margin: 0;
   padding: 0;
   border: none;
   height: var(--banner-height);
+  border-top-left-radius: var(--banner-border-radius);
+  border-top-right-radius: var(--banner-border-radius);
 }
 
 .product-banner-container {
@@ -438,8 +442,11 @@
 }
 
 .product-banner-btn-cart:hover:not(:disabled) {
-  background: #FF5252;
-  border-color: #FF5252;
+  background: var(--button1-text-color);
+  color: var(--button1-bg-color);
+  border-color: var(--button1-text-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .product-banner-btn-buy {
@@ -449,8 +456,11 @@
 }
 
 .product-banner-btn-buy:hover:not(:disabled) {
-  background: var(--button1-bg-color);
-  color: #ffffff;
+  background: var(--button2-text-color);
+  color: var(--button2-bg-color);
+  border-color: var(--button2-text-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* Spinner */

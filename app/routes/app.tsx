@@ -22,6 +22,7 @@ export default function App() {
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <NavMenu>
         <Link to="/app" rel="home"> Home </Link>
+            {/* 
         <Link to="/app/create-banner">Create New Banner</Link>
         <Link to="/app/manage-banners">Manage Banners</Link>
         <Link to="/app/banner-analytics">Banner Analytics</Link>
@@ -29,7 +30,10 @@ export default function App() {
         <Link to="/app/manage-bottom-banners">Manage Bottom Banners</Link>
         <Link to="/app/create-static-banner">Create Static Banner</Link>
         <Link to="/app/manage-static-banners">Manage Static Banners</Link>
+        */}
+
         <Link to="/app/manage-product-banners">Product Banner Settings</Link>
+        <Link to="/app/banner-templates">Banner Templates</Link>
         <Link to="/app/product-banner-analytics">Product Banner Analytics</Link>
         <Link to="/app/ab-tests">A/B Testing</Link>
         <Link to="/app/sync-products">Sync Products</Link>
